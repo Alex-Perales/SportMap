@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+    <!-- Pin de mapa centrado -->
+    <group android:translateX="36" android:translateY="28">
+        <path
+            android:fillColor="#FFFFFF"
+            android:pathData="M18,0 C8.06,0 0,8.06 0,18 C0,30.5 18,52 18,52 C18,52 36,30.5 36,18 C36,8.06 27.94,0 18,0 Z M18,25 C14.13,25 11,21.87 11,18 C11,14.13 14.13,11 18,11 C21.87,11 25,14.13 25,18 C25,21.87 21.87,25 18,25 Z"/>
+    </group>
+</vector>
