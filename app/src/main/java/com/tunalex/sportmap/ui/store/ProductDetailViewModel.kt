@@ -10,6 +10,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
 data class ProductDetailUiState(
@@ -48,7 +49,7 @@ class ProductDetailViewModel(
         viewModelScope.launch {
             val userId = prefs.currentUserId.first()
             if (userId <= 0L) {
-                _state.value = s.copy(message = "Debes iniciar sesión.")
+                _state.update { it.copy(message = "Debes iniciar sesión.") }
                 return@launch
             }
             val unitPrice = if (p.isOnSale) p.price * (1 - p.discountPercent / 100.0) else p.price
@@ -63,7 +64,7 @@ class ProductDetailViewModel(
                     selectedSize = s.selectedSize
                 )
             )
-            _state.value = s.copy(message = "Añadido al carrito ✔")
+            _state.update { it.copy(message = "Añadido al carrito ✔") }
         }
     }
 }

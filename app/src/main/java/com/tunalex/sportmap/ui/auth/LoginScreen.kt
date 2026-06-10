@@ -160,7 +160,7 @@ fun LoginScreen(
                     CircularProgressIndicator(
                         color = BlueVibrant,
                         strokeWidth = 2.dp,
-                        modifier = Modifier.height(22.dp)
+                        modifier = Modifier.size(22.dp)
                     )
                 } else {
                     Text(

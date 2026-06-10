@@ -310,13 +310,17 @@ private fun ReservationForm(
     Spacer(Modifier.height(20.dp))
     Button(
         onClick = onReserve,
+        enabled = !state.reservationDone,
         modifier = Modifier
             .fillMaxWidth()
             .heightIn(min = 50.dp),
         shape = RoundedCornerShape(28.dp),
         colors = ButtonDefaults.buttonColors(containerColor = BlueVibrant)
     ) {
-        Text("Reservar", fontWeight = FontWeight.SemiBold)
+        Text(
+            if (state.reservationDone) "¡Reservado!" else "Reservar",
+            fontWeight = FontWeight.SemiBold
+        )
     }
 
     if (dateDialog) {

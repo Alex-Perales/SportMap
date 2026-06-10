@@ -154,7 +154,7 @@ fun SignUpScreen(
             ) {
                 if (state.loading) {
                     CircularProgressIndicator(color = BlueVibrant, strokeWidth = 2.dp,
-                        modifier = Modifier.height(22.dp))
+                        modifier = Modifier.size(22.dp))
                 } else {
                     Text("Crear cuenta", fontSize = 16.sp, fontWeight = FontWeight.SemiBold)
                 }

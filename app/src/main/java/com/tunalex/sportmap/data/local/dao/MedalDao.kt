@@ -17,7 +17,11 @@ interface MedalDao {
     @Update
     suspend fun update(medal: MedalEntity)
 
-    @Query("SELECT * FROM medals WHERE userId = :userId ORDER BY earned DESC, tier DESC")
+    @Query("""
+        SELECT * FROM medals WHERE userId = :userId
+        ORDER BY earned DESC,
+                 CASE tier WHEN 'gold' THEN 0 WHEN 'silver' THEN 1 ELSE 2 END ASC
+    """)
     fun observeByUser(userId: Long): Flow<List<MedalEntity>>
 
     @Query("SELECT COUNT(*) FROM medals WHERE userId = :userId")

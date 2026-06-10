@@ -10,6 +10,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
 data class PlaceDetailUiState(
@@ -47,13 +48,13 @@ class PlaceDetailViewModel(
         val place = s.place ?: return
         val date = s.selectedDateMillis
         if (date == null) {
-            _state.value = s.copy(message = "Selecciona una fecha.")
+            _state.update { it.copy(message = "Selecciona una fecha.") }
             return
         }
         viewModelScope.launch {
             val userId = prefs.currentUserId.first()
             if (userId <= 0L) {
-                _state.value = s.copy(message = "Debes iniciar sesión.")
+                _state.update { it.copy(message = "Debes iniciar sesión.") }
                 return@launch
             }
             repo.createReservation(
@@ -66,10 +67,10 @@ class PlaceDetailViewModel(
                     peopleCount = s.peopleCount
                 )
             )
-            _state.value = s.copy(
+            _state.update { it.copy(
                 reservationDone = true,
                 message = "¡Reserva confirmada en ${place.name}!"
-            )
+            ) }
         }
     }
 }
