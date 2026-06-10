@@ -112,58 +112,58 @@ fun MapScreen(
         }
     }
 
-    Column(modifier = Modifier.fillMaxSize()) {
-        SportChipsRow(
-            selected = state.selectedSport,
-            onSelect = { vm.selectSport(it) }
-        )
-        Box(
-            modifier = Modifier
-                .fillMaxWidth()
-                .weight(1f)
-        ) {
-            AndroidView(
-                factory = { mapView },
-                modifier = Modifier.fillMaxSize(),
-                update = { mv ->
-                    // Limpia overlays anteriores y vuelve a dibujar según el estado actual
-                    mv.overlays.clear()
-                    state.places.forEach { place ->
-                        addPlaceOverlay(mv, place, onPlaceClick)
-                    }
-                    mv.invalidate()
+    Box(modifier = Modifier.fillMaxSize()) {
+        // El mapa ocupa toda la pantalla como fondo
+        AndroidView(
+            factory = { mapView },
+            modifier = Modifier.fillMaxSize(),
+            update = { mv ->
+                // Limpia overlays anteriores y vuelve a dibujar según el estado actual
+                mv.overlays.clear()
+                state.places.forEach { place ->
+                    addPlaceOverlay(mv, place, onPlaceClick)
                 }
-            )
+                mv.invalidate()
+            }
+        )
 
-            AqiBadge(
-                aqi = state.averageAqi,
-                modifier = Modifier
-                    .align(Alignment.TopEnd)
-                    .padding(12.dp)
+        // Todos los elementos Compose se dibujan encima del mapa (siempre visibles)
+        Column(modifier = Modifier.fillMaxSize()) {
+            SportChipsRow(
+                selected = state.selectedSport,
+                onSelect = { vm.selectSport(it) }
             )
-
-            // Atribución requerida por OpenStreetMap
-            Text(
-                text = "© OpenStreetMap contributors",
-                fontSize = 9.sp,
-                color = Color.Black.copy(alpha = 0.55f),
-                modifier = Modifier
-                    .align(Alignment.BottomStart)
-                    .padding(start = 4.dp, bottom = 2.dp)
-                    .background(Color.White.copy(alpha = 0.7f))
-                    .padding(horizontal = 4.dp, vertical = 1.dp)
-            )
-
-            if (state.places.isEmpty()) {
-                Card(
+            Box(modifier = Modifier.weight(1f)) {
+                AqiBadge(
+                    aqi = state.averageAqi,
                     modifier = Modifier
-                        .align(Alignment.BottomCenter)
-                        .padding(16.dp)
-                ) {
-                    Text(
-                        "No hay lugares para este deporte.",
-                        modifier = Modifier.padding(16.dp)
-                    )
+                        .align(Alignment.TopEnd)
+                        .padding(12.dp)
+                )
+
+                // Atribución requerida por OpenStreetMap
+                Text(
+                    text = "© OpenStreetMap contributors",
+                    fontSize = 9.sp,
+                    color = Color.Black.copy(alpha = 0.55f),
+                    modifier = Modifier
+                        .align(Alignment.BottomStart)
+                        .padding(start = 4.dp, bottom = 2.dp)
+                        .background(Color.White.copy(alpha = 0.7f))
+                        .padding(horizontal = 4.dp, vertical = 1.dp)
+                )
+
+                if (state.places.isEmpty()) {
+                    Card(
+                        modifier = Modifier
+                            .align(Alignment.BottomCenter)
+                            .padding(16.dp)
+                    ) {
+                        Text(
+                            "No hay lugares para este deporte.",
+                            modifier = Modifier.padding(16.dp)
+                        )
+                    }
                 }
             }
         }
