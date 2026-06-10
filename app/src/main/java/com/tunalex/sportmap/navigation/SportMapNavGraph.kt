@@ -47,12 +47,25 @@ fun SportMapNavGraph(
                         NavigationBarItem(
                             selected = currentRoute == item.route,
                             onClick = {
-                                navController.navigate(item.route) {
-                                    popUpTo(navController.graph.findStartDestination().id) {
-                                        saveState = true
+                                if (item.route == NavRoutes.DASHBOARD) {
+                                    // Para "Inicio": hacer pop directo hasta DASHBOARD sin saveState
+                                    val popped = navController.popBackStack(
+                                        route = NavRoutes.DASHBOARD,
+                                        inclusive = false
+                                    )
+                                    if (!popped) {
+                                        navController.navigate(NavRoutes.DASHBOARD) {
+                                            popUpTo(0) { inclusive = true }
+                                        }
                                     }
-                                    launchSingleTop = true
-                                    restoreState = true
+                                } else {
+                                    navController.navigate(item.route) {
+                                        popUpTo(NavRoutes.DASHBOARD) {
+                                            saveState = true
+                                        }
+                                        launchSingleTop = true
+                                        restoreState = true
+                                    }
                                 }
                             },
                             icon = { Icon(item.icon, contentDescription = item.label) },
@@ -90,7 +103,13 @@ fun SportMapNavGraph(
             }
             composable(NavRoutes.DASHBOARD) {
                 DashboardScreen(
-                    onStartActivity = { navController.navigate(NavRoutes.MAP) },
+                    onStartActivity = {
+                        navController.navigate(NavRoutes.MAP) {
+                            popUpTo(NavRoutes.DASHBOARD) { saveState = true }
+                            launchSingleTop = true
+                            restoreState = true
+                        }
+                    },
                     onOpenPremium = { navController.navigate(NavRoutes.PREMIUM) }
                 )
             }
