@@ -6,6 +6,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -31,6 +32,7 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -45,7 +47,10 @@ import coil.compose.AsyncImage
 import com.tunalex.sportmap.ui.theme.BlueMedium
 import com.tunalex.sportmap.ui.theme.BlueVibrant
 import com.tunalex.sportmap.ui.theme.GoldPremium
+import com.tunalex.sportmap.ui.theme.GreenSafe
 import com.tunalex.sportmap.ui.theme.IndigoDeep
+import com.tunalex.sportmap.ui.theme.OrangeAlert
+import com.tunalex.sportmap.ui.theme.RedDanger
 import com.tunalex.sportmap.viewmodel.SportMapViewModels
 import java.text.SimpleDateFormat
 import java.util.Date
@@ -86,6 +91,11 @@ fun DashboardScreen(
 
             Spacer(Modifier.height(20.dp))
             NextReservationCard(state.nextReservation)
+
+            if (state.user?.isPremium == true) {
+                Spacer(Modifier.height(20.dp))
+                ProChartsSection()
+            }
 
             Spacer(Modifier.height(20.dp))
             PremiumSection(
@@ -254,6 +264,178 @@ private fun NextReservationCard(reservation: com.tunalex.sportmap.data.local.ent
                         color = Color.White.copy(alpha = 0.85f),
                         fontSize = 12.sp
                     )
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun ProChartsSection() {
+    val weeklyData = remember {
+        listOf(
+            "Lun" to 0.45f, "Mar" to 0.62f, "Mié" to 0.78f, "Jue" to 0.55f,
+            "Vie" to 0.91f, "Sáb" to 0.88f, "Dom" to 0.72f
+        )
+    }
+    val dailySlots = remember {
+        listOf(
+            "Mañana\n6–12h" to 0.65f,
+            "Tarde\n12–18h" to 0.88f,
+            "Noche\n18–22h" to 0.52f
+        )
+    }
+    val peakValue = weeklyData.maxOf { it.second }
+    val bestSlot = dailySlots.minByOrNull { it.second }
+
+    Card(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 16.dp),
+        shape = RoundedCornerShape(20.dp),
+        elevation = CardDefaults.cardElevation(defaultElevation = 3.dp)
+    ) {
+        Column(modifier = Modifier.padding(20.dp)) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Icon(
+                    Icons.Filled.TrendingUp,
+                    contentDescription = null,
+                    tint = GoldPremium,
+                    modifier = Modifier.size(20.dp)
+                )
+                Spacer(Modifier.width(8.dp))
+                Text("Pronósticos de Canchas", fontWeight = FontWeight.Bold, fontSize = 16.sp)
+            }
+
+            Spacer(Modifier.height(20.dp))
+            Text(
+                "Actividad semanal",
+                fontSize = 13.sp,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                fontWeight = FontWeight.Medium
+            )
+            Spacer(Modifier.height(12.dp))
+
+            // Gráfica de barras semanal
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(100.dp),
+                horizontalArrangement = Arrangement.SpaceEvenly,
+                verticalAlignment = Alignment.Bottom
+            ) {
+                weeklyData.forEach { (day, value) ->
+                    val isPeak = value == peakValue
+                    Column(
+                        modifier = Modifier.weight(1f),
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        verticalArrangement = Arrangement.Bottom
+                    ) {
+                        Text(
+                            "${(value * 100).toInt()}%",
+                            fontSize = 8.sp,
+                            color = if (isPeak) GoldPremium
+                            else MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                        Spacer(Modifier.height(2.dp))
+                        Box(
+                            modifier = Modifier
+                                .fillMaxWidth(0.7f)
+                                .height((value * 80).dp)
+                                .clip(RoundedCornerShape(topStart = 4.dp, topEnd = 4.dp))
+                                .background(
+                                    if (isPeak) GoldPremium
+                                    else BlueVibrant.copy(alpha = 0.65f)
+                                )
+                        )
+                        Spacer(Modifier.height(4.dp))
+                        Text(
+                            day,
+                            fontSize = 10.sp,
+                            color = if (isPeak) GoldPremium
+                            else MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+                }
+            }
+
+            Spacer(Modifier.height(20.dp))
+            Text(
+                "Afluencia por horario (hoy)",
+                fontSize = 13.sp,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                fontWeight = FontWeight.Medium
+            )
+            Spacer(Modifier.height(10.dp))
+
+            // Barras horizontales por horario
+            dailySlots.forEach { (slot, value) ->
+                val barColor = when {
+                    value >= 0.8f -> RedDanger
+                    value >= 0.6f -> OrangeAlert
+                    else -> GreenSafe
+                }
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(vertical = 5.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text(
+                        slot,
+                        fontSize = 11.sp,
+                        modifier = Modifier.width(74.dp),
+                        lineHeight = 15.sp
+                    )
+                    Spacer(Modifier.width(8.dp))
+                    Box(
+                        modifier = Modifier
+                            .weight(1f)
+                            .height(10.dp)
+                            .clip(RoundedCornerShape(5.dp))
+                            .background(MaterialTheme.colorScheme.surfaceVariant)
+                    ) {
+                        Box(
+                            modifier = Modifier
+                                .fillMaxHeight()
+                                .fillMaxWidth(value)
+                                .clip(RoundedCornerShape(5.dp))
+                                .background(barColor)
+                        )
+                    }
+                    Spacer(Modifier.width(8.dp))
+                    Text(
+                        "${(value * 100).toInt()}%",
+                        fontSize = 11.sp,
+                        fontWeight = FontWeight.SemiBold,
+                        color = barColor,
+                        modifier = Modifier.width(32.dp)
+                    )
+                }
+            }
+
+            if (bestSlot != null) {
+                Spacer(Modifier.height(12.dp))
+                Card(
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(12.dp),
+                    colors = CardDefaults.cardColors(
+                        containerColor = GreenSafe.copy(alpha = 0.12f)
+                    )
+                ) {
+                    Row(
+                        modifier = Modifier.padding(horizontal = 12.dp, vertical = 10.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text("💡", fontSize = 16.sp)
+                        Spacer(Modifier.width(8.dp))
+                        Text(
+                            "Mejor horario hoy: ${bestSlot.first.replace("\n", " ")} · menor afluencia",
+                            fontSize = 12.sp,
+                            color = GreenSafe,
+                            fontWeight = FontWeight.Medium
+                        )
+                    }
                 }
             }
         }

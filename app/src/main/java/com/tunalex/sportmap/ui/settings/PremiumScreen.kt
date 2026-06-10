@@ -160,7 +160,11 @@ fun PremiumScreen(
                         )
                         Spacer(Modifier.height(20.dp))
                         Button(
-                            onClick = { vm.togglePremium() },
+                            onClick = {
+                                val wasAlreadyPremium = isPremium
+                                vm.togglePremium()
+                                if (!wasAlreadyPremium) onBack()
+                            },
                             modifier = Modifier
                                 .fillMaxWidth()
                                 .heightIn(min = 50.dp),
