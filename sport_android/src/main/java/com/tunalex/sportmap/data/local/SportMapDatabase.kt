@@ -53,7 +53,7 @@ import com.tunalex.sportmap.data.local.entity.UserKycEntity
         ComplaintEntity::class,
         NotificationEntity::class
     ],
-    version = 3,
+    version = 7,
     exportSchema = false
 )
 abstract class SportMapDatabase : RoomDatabase() {

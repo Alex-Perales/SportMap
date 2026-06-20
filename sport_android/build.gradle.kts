@@ -79,8 +79,11 @@ dependencies {
     // Coil (image loading)
     implementation(libs.coil.compose)
 
-    // OpenStreetMap (osmdroid) — gratis, sin API key
-    implementation(libs.osmdroid.android)
+    // Google Maps Compose
+    implementation(libs.maps.compose)
+
+    // Location (FusedLocationProviderClient)
+    implementation(libs.play.services.location)
 
     // Coroutines
     implementation(libs.kotlinx.coroutines.android)

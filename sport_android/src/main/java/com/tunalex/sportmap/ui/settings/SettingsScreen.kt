@@ -12,7 +12,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
@@ -20,6 +19,7 @@ import androidx.compose.material.icons.filled.ChevronRight
 import androidx.compose.material.icons.filled.DarkMode
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.EmojiEvents
+import androidx.compose.material.icons.filled.DateRange
 import androidx.compose.material.icons.filled.HelpOutline
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.LightMode
@@ -67,14 +67,15 @@ fun SettingsScreen(
     onOpenMedals: () -> Unit,
     onOpenPremium: () -> Unit,
     onEditProfile: () -> Unit,
+    onOpenHelp: () -> Unit = {},
+    onOpenAbout: () -> Unit = {},
+    onOpenReservationHistory: () -> Unit = {},
     vm: SettingsViewModel = viewModel(factory = SportMapViewModels.Factory)
 ) {
     val state by vm.state.collectAsStateWithLifecycle()
     val snackbar = remember { SnackbarHostState() }
     var showLogoutDialog by remember { mutableStateOf(false) }
     var showDeleteDialog by remember { mutableStateOf(false) }
-    var showAboutDialog by remember { mutableStateOf(false) }
-    var showHelpDialog by remember { mutableStateOf(false) }
 
     LaunchedEffect(Unit) {
         vm.events.collect { ev ->
@@ -82,6 +83,7 @@ fun SettingsScreen(
                 is SettingsViewModel.SettingsEvent.LoggedOut -> onLogout()
                 is SettingsViewModel.SettingsEvent.AccountDeleted -> onLogout()
                 is SettingsViewModel.SettingsEvent.Toast -> snackbar.showSnackbar(ev.message)
+                is SettingsViewModel.SettingsEvent.ProfileSaved -> {}
             }
         }
     }
@@ -107,20 +109,11 @@ fun SettingsScreen(
                     modifier = Modifier.padding(16.dp),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Box(
-                        modifier = Modifier
-                            .size(56.dp)
-                            .clip(CircleShape)
-                            .background(BlueVibrant),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Text(
-                            text = (state.user?.name?.firstOrNull()?.uppercase() ?: "?"),
-                            color = Color.White,
-                            fontSize = 24.sp,
-                            fontWeight = FontWeight.Bold
-                        )
-                    }
+                    ProfileAvatar(
+                        imageUriOrEmoji = state.user?.profileImageUrl,
+                        fallbackLetter = state.user?.name?.firstOrNull()?.uppercase() ?: "?",
+                        size = 56
+                    )
                     Spacer(Modifier.width(14.dp))
                     Column(modifier = Modifier.weight(1f)) {
                         Text(
@@ -201,6 +194,12 @@ fun SettingsScreen(
                 onClick = onOpenMedals
             )
             SettingClickRow(
+                icon = Icons.Filled.DateRange,
+                title = "Historial de reservas",
+                subtitle = "Tus canchas y horarios reservados",
+                onClick = onOpenReservationHistory
+            )
+            SettingClickRow(
                 icon = Icons.Filled.Person,
                 title = "Editar perfil",
                 subtitle = "Nombre, distrito preferido",
@@ -223,13 +222,13 @@ fun SettingsScreen(
                 icon = Icons.Filled.HelpOutline,
                 title = "Ayuda y FAQ",
                 subtitle = "Preguntas frecuentes y contacto",
-                onClick = { showHelpDialog = true }
+                onClick = onOpenHelp
             )
             SettingClickRow(
                 icon = Icons.Filled.Info,
                 title = "Acerca de",
                 subtitle = "Versión 1.0 · SportMap",
-                onClick = { showAboutDialog = true }
+                onClick = onOpenAbout
             )
             SettingClickRow(
                 icon = Icons.Filled.Logout,
@@ -277,43 +276,6 @@ fun SettingsScreen(
             },
             dismissButton = {
                 TextButton(onClick = { showDeleteDialog = false }) { Text("Cancelar") }
-            }
-        )
-    }
-    if (showAboutDialog) {
-        AlertDialog(
-            onDismissRequest = { showAboutDialog = false },
-            title = { Text("SportMap") },
-            text = {
-                Column {
-                    Text("Versión 1.0 (build 1)")
-                    Spacer(Modifier.size(8.dp))
-                    Text("Encuentra canchas, rutas y espacios deportivos cerca de ti. Reserva, entrena y mejora día a día.")
-                    Spacer(Modifier.size(12.dp))
-                    Text("© 2026 TunaLex. Todos los derechos reservados.", fontSize = 11.sp,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant)
-                }
-            },
-            confirmButton = {
-                TextButton(onClick = { showAboutDialog = false }) { Text("Cerrar") }
-            }
-        )
-    }
-    if (showHelpDialog) {
-        AlertDialog(
-            onDismissRequest = { showHelpDialog = false },
-            title = { Text("Ayuda y FAQ") },
-            text = {
-                Column {
-                    Text("• ¿Cómo reservo una cancha? → Toca un marcador en el mapa, selecciona fecha/hora y confirma.", fontSize = 13.sp)
-                    Spacer(Modifier.size(8.dp))
-                    Text("• ¿Puedo cancelar una reserva? → Sí, desde tu próxima reserva en el dashboard.", fontSize = 13.sp)
-                    Spacer(Modifier.size(8.dp))
-                    Text("• Soporte: support@sportmap.app", fontSize = 13.sp)
-                }
-            },
-            confirmButton = {
-                TextButton(onClick = { showHelpDialog = false }) { Text("OK") }
             }
         )
     }

@@ -36,8 +36,13 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
+import androidx.compose.material3.rememberModalBottomSheetState
+import com.tunalex.sportmap.ui.components.PaymentBottomSheet
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -59,6 +64,21 @@ fun PremiumScreen(
 ) {
     val state by vm.state.collectAsStateWithLifecycle()
     val isPremium = state.user?.isPremium == true
+    var showPaymentSheet by remember { mutableStateOf(false) }
+
+    if (showPaymentSheet) {
+        val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
+        PaymentBottomSheet(
+            amount = 10.90,
+            sheetState = sheetState,
+            onDismiss = { showPaymentSheet = false },
+            onPay = {
+                showPaymentSheet = false
+                vm.togglePremium()
+                onBack()
+            }
+        )
+    }
 
     Scaffold(
         topBar = {
@@ -144,7 +164,7 @@ fun PremiumScreen(
                         Text("Plan mensual", fontWeight = FontWeight.SemiBold)
                         Row(verticalAlignment = Alignment.Bottom) {
                             Text(
-                                "S/. 19.90",
+                                "S/. 10.90",
                                 fontSize = 32.sp,
                                 fontWeight = FontWeight.Bold,
                                 color = GoldPremium
@@ -161,9 +181,11 @@ fun PremiumScreen(
                         Spacer(Modifier.height(20.dp))
                         Button(
                             onClick = {
-                                val wasAlreadyPremium = isPremium
-                                vm.togglePremium()
-                                if (!wasAlreadyPremium) onBack()
+                                if (isPremium) {
+                                    vm.togglePremium()
+                                } else {
+                                    showPaymentSheet = true
+                                }
                             },
                             modifier = Modifier
                                 .fillMaxWidth()

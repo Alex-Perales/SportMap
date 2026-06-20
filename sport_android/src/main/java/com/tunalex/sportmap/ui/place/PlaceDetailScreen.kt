@@ -24,9 +24,11 @@ import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.CalendarToday
 import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.LocationOn
+import androidx.compose.material.icons.filled.Navigation
 import androidx.compose.material.icons.filled.Remove
 import androidx.compose.material.icons.filled.Schedule
 import androidx.compose.material.icons.filled.Star
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.AssistChip
 import androidx.compose.material3.AssistChipDefaults
 import androidx.compose.material3.Button
@@ -47,6 +49,7 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TimePicker
 import androidx.compose.material3.rememberDatePickerState
+import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.material3.rememberTimePickerState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -66,7 +69,9 @@ import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import coil.compose.AsyncImage
+import com.tunalex.sportmap.ui.components.PaymentBottomSheet
 import com.tunalex.sportmap.ui.theme.BlueVibrant
+import com.tunalex.sportmap.ui.theme.GreenSafe
 import com.tunalex.sportmap.ui.theme.IndigoDeep
 import com.tunalex.sportmap.viewmodel.SportMapViewModels
 import java.text.SimpleDateFormat
@@ -78,6 +83,7 @@ import java.util.Locale
 fun PlaceDetailScreen(
     placeId: Long,
     onBack: () -> Unit,
+    onNavigate: (placeId: Long) -> Unit = {},
     vm: PlaceDetailViewModel = viewModel(factory = SportMapViewModels.Factory)
 ) {
     val state by vm.state.collectAsStateWithLifecycle()
@@ -189,10 +195,21 @@ fun PlaceDetailScreen(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
-                    val limited = services.take(4)
-                    limited.forEach { svc ->
-                        ServiceChip(svc.trim())
-                    }
+                    services.take(4).forEach { svc -> ServiceChip(svc.trim()) }
+                }
+
+                Spacer(Modifier.height(20.dp))
+                Button(
+                    onClick = { onNavigate(place.id) },
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .heightIn(min = 52.dp),
+                    shape = RoundedCornerShape(28.dp),
+                    colors = ButtonDefaults.buttonColors(containerColor = GreenSafe)
+                ) {
+                    Icon(Icons.Filled.Navigation, null, modifier = Modifier.size(20.dp))
+                    Spacer(Modifier.width(8.dp))
+                    Text("Cómo llegar", fontWeight = FontWeight.SemiBold)
                 }
 
                 if (place.isPrivate) {
@@ -260,6 +277,8 @@ private fun ReservationForm(
 ) {
     var dateDialog by remember { mutableStateOf(false) }
     var timeDialog by remember { mutableStateOf(false) }
+    var showPaymentSheet by remember { mutableStateOf(false) }
+    var showConfirmDialog by remember { mutableStateOf(false) }
 
     val dateText = state.selectedDateMillis?.let {
         SimpleDateFormat("EEE d MMM yyyy", Locale("es")).format(Date(it))
@@ -309,7 +328,13 @@ private fun ReservationForm(
 
     Spacer(Modifier.height(20.dp))
     Button(
-        onClick = onReserve,
+        onClick = {
+            if (state.selectedDateMillis == null) {
+                onReserve() // el VM maneja la validación y muestra snackbar
+            } else {
+                showPaymentSheet = true
+            }
+        },
         enabled = !state.reservationDone,
         modifier = Modifier
             .fillMaxWidth()
@@ -320,6 +345,55 @@ private fun ReservationForm(
         Text(
             if (state.reservationDone) "¡Reservado!" else "Reservar",
             fontWeight = FontWeight.SemiBold
+        )
+    }
+
+    // Payment bottom sheet
+    if (showPaymentSheet) {
+        val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
+        PaymentBottomSheet(
+            amount = state.place?.pricePerHour ?: 0.0,
+            sheetState = sheetState,
+            onDismiss = { showPaymentSheet = false },
+            onPay = {
+                showPaymentSheet = false
+                showConfirmDialog = true
+            }
+        )
+    }
+
+    // Confirmation dialog
+    if (showConfirmDialog) {
+        val placeName = state.place?.name ?: "este lugar"
+        val dateFormatted = state.selectedDateMillis?.let {
+            SimpleDateFormat("d 'de' MMMM", Locale("es")).format(Date(it))
+        } ?: ""
+        AlertDialog(
+            onDismissRequest = { showConfirmDialog = false },
+            title = { Text("¿Confirmar reserva?", fontWeight = FontWeight.Bold) },
+            text = {
+                Text(
+                    "¿Realmente deseas reservar en $placeName el $dateFormatted a las ${state.selectedTime}?",
+                    fontSize = 14.sp,
+                    lineHeight = 20.sp
+                )
+            },
+            confirmButton = {
+                Button(
+                    onClick = {
+                        showConfirmDialog = false
+                        onReserve()
+                    },
+                    colors = ButtonDefaults.buttonColors(containerColor = BlueVibrant)
+                ) {
+                    Text("Confirmar")
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showConfirmDialog = false }) {
+                    Text("Cancelar")
+                }
+            }
         )
     }
 
@@ -365,3 +439,4 @@ private fun ReservationForm(
         }
     }
 }
+

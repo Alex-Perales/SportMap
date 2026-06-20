@@ -31,6 +31,7 @@ class AppRepository(
 ) {
     // === User ===
     fun observeUser(userId: Long) = userDao.observeById(userId)
+    suspend fun findUserById(id: Long): UserEntity? = userDao.findById(id)
     suspend fun updateUser(user: UserEntity) = userDao.update(user)
     suspend fun setPremium(userId: Long, premium: Boolean) {
         val u = userDao.findById(userId) ?: return

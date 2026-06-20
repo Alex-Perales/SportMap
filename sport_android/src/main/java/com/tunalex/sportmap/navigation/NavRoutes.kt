@@ -21,4 +21,12 @@ object NavRoutes {
     const val MEDALS = "medals"
     const val PREMIUM = "premium"
     const val EDIT_PROFILE = "edit_profile"
+    const val HELP_FAQ = "help_faq"
+    const val ABOUT = "about"
+    const val RESERVATION_HISTORY = "reservation_history"
+
+    const val ROUTE = "route"
+    const val ROUTE_PLACE_ARG = "placeId"
+    const val ROUTE_ROUTE = "$ROUTE/{$ROUTE_PLACE_ARG}"
+    fun route(placeId: Long) = "$ROUTE/$placeId"
 }

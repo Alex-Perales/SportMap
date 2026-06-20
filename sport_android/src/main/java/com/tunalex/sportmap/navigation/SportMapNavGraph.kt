@@ -21,11 +21,15 @@ import com.tunalex.sportmap.ui.auth.LoginScreen
 import com.tunalex.sportmap.ui.auth.SignUpScreen
 import com.tunalex.sportmap.ui.dashboard.DashboardScreen
 import com.tunalex.sportmap.ui.map.MapScreen
+import com.tunalex.sportmap.ui.map.RouteScreen
 import com.tunalex.sportmap.ui.place.PlaceDetailScreen
 import com.tunalex.sportmap.ui.settings.SettingsScreen
 import com.tunalex.sportmap.ui.settings.MedalsScreen
 import com.tunalex.sportmap.ui.settings.PremiumScreen
 import com.tunalex.sportmap.ui.settings.EditProfileScreen
+import com.tunalex.sportmap.ui.settings.AboutScreen
+import com.tunalex.sportmap.ui.settings.HelpFaqScreen
+import com.tunalex.sportmap.ui.settings.ReservationHistoryScreen
 import com.tunalex.sportmap.ui.store.CartScreen
 import com.tunalex.sportmap.ui.store.ProductDetailScreen
 import com.tunalex.sportmap.ui.store.StoreScreen
@@ -125,7 +129,8 @@ fun SportMapNavGraph(
                 val placeId = entry.arguments?.getLong(NavRoutes.PLACE_DETAIL_ARG) ?: 0L
                 PlaceDetailScreen(
                     placeId = placeId,
-                    onBack = { navController.popBackStack() }
+                    onBack = { navController.popBackStack() },
+                    onNavigate = { id -> navController.navigate(NavRoutes.route(id)) }
                 )
             }
             composable(NavRoutes.STORE) {
@@ -157,8 +162,14 @@ fun SportMapNavGraph(
                     },
                     onOpenMedals = { navController.navigate(NavRoutes.MEDALS) },
                     onOpenPremium = { navController.navigate(NavRoutes.PREMIUM) },
-                    onEditProfile = { navController.navigate(NavRoutes.EDIT_PROFILE) }
+                    onEditProfile = { navController.navigate(NavRoutes.EDIT_PROFILE) },
+                    onOpenHelp = { navController.navigate(NavRoutes.HELP_FAQ) },
+                    onOpenAbout = { navController.navigate(NavRoutes.ABOUT) },
+                    onOpenReservationHistory = { navController.navigate(NavRoutes.RESERVATION_HISTORY) }
                 )
+            }
+            composable(NavRoutes.RESERVATION_HISTORY) {
+                ReservationHistoryScreen(onBack = { navController.popBackStack() })
             }
             composable(NavRoutes.MEDALS) {
                 MedalsScreen(onBack = { navController.popBackStack() })
@@ -167,7 +178,30 @@ fun SportMapNavGraph(
                 PremiumScreen(onBack = { navController.popBackStack() })
             }
             composable(NavRoutes.EDIT_PROFILE) {
-                EditProfileScreen(onBack = { navController.popBackStack() })
+                EditProfileScreen(
+                    onBack = { navController.popBackStack() },
+                    onLogout = {
+                        navController.navigate(NavRoutes.LOGIN) {
+                            popUpTo(0) { inclusive = true }
+                        }
+                    }
+                )
+            }
+            composable(NavRoutes.HELP_FAQ) {
+                HelpFaqScreen(onBack = { navController.popBackStack() })
+            }
+            composable(NavRoutes.ABOUT) {
+                AboutScreen(onBack = { navController.popBackStack() })
+            }
+            composable(
+                route = NavRoutes.ROUTE_ROUTE,
+                arguments = listOf(navArgument(NavRoutes.ROUTE_PLACE_ARG) { type = NavType.LongType })
+            ) { entry ->
+                val placeId = entry.arguments?.getLong(NavRoutes.ROUTE_PLACE_ARG) ?: 0L
+                RouteScreen(
+                    placeId = placeId,
+                    onBack = { navController.popBackStack() }
+                )
             }
         }
     }

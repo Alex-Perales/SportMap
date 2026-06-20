@@ -32,10 +32,14 @@ import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
+import androidx.compose.material3.rememberModalBottomSheetState
+import com.tunalex.sportmap.ui.components.PaymentBottomSheet
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -58,6 +62,7 @@ fun CartScreen(
 ) {
     val state by vm.state.collectAsStateWithLifecycle()
     val snackbar = remember { SnackbarHostState() }
+    var showPaymentSheet by remember { mutableStateOf(false) }
 
     LaunchedEffect(Unit) {
         vm.events.collect { snackbar.showSnackbar(it) }
@@ -93,7 +98,7 @@ fun CartScreen(
                         }
                         Spacer(Modifier.height(12.dp))
                         Button(
-                            onClick = { vm.checkout() },
+                            onClick = { showPaymentSheet = true },
                             modifier = Modifier.fillMaxWidth().heightIn(min = 50.dp),
                             shape = RoundedCornerShape(28.dp),
                             colors = ButtonDefaults.buttonColors(containerColor = BlueVibrant)
@@ -105,6 +110,19 @@ fun CartScreen(
             }
         }
     ) { padding ->
+        if (showPaymentSheet) {
+            val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
+            PaymentBottomSheet(
+                amount = state.total,
+                sheetState = sheetState,
+                onDismiss = { showPaymentSheet = false },
+                onPay = {
+                    showPaymentSheet = false
+                    vm.checkout()
+                }
+            )
+        }
+
         if (state.items.isEmpty()) {
             Column(
                 modifier = Modifier

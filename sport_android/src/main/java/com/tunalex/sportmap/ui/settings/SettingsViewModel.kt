@@ -48,9 +48,21 @@ class SettingsViewModel(
     private val _events = MutableSharedFlow<SettingsEvent>()
     val events = _events.asSharedFlow()
 
+    init {
+        // Detect stale session: ID exists in DataStore but user was deleted from DB
+        viewModelScope.launch {
+            val id = prefs.currentUserId.first()
+            if (id > 0L && repo.findUserById(id) == null) {
+                auth.logout()
+                _events.emit(SettingsEvent.LoggedOut)
+            }
+        }
+    }
+
     sealed class SettingsEvent {
         object LoggedOut : SettingsEvent()
         object AccountDeleted : SettingsEvent()
+        object ProfileSaved : SettingsEvent()
         data class Toast(val message: String) : SettingsEvent()
     }
 
@@ -67,11 +79,15 @@ class SettingsViewModel(
         viewModelScope.launch { repo.setPremium(u.id, !u.isPremium) }
     }
 
-    fun updateProfile(name: String, district: String) {
-        val u = state.value.user ?: return
+    fun updateProfile(name: String, district: String, profileImageUri: String? = null) {
         viewModelScope.launch {
-            repo.updateUser(u.copy(name = name, district = district))
-            _events.emit(SettingsEvent.Toast("Perfil actualizado"))
+            val u = state.value.user ?: run {
+                val id = prefs.currentUserId.first()
+                if (id <= 0L) return@launch
+                repo.findUserById(id)
+            } ?: return@launch
+            repo.updateUser(u.copy(name = name, district = district, profileImageUrl = profileImageUri))
+            _events.emit(SettingsEvent.ProfileSaved)
         }
     }
 

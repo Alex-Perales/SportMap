@@ -3,6 +3,7 @@ package com.tunalex.sportmap
 import android.app.Application
 import com.tunalex.sportmap.data.local.Seed
 import com.tunalex.sportmap.data.local.SportMapDatabase
+import com.tunalex.sportmap.data.remote.DirectionsRepository
 import com.tunalex.sportmap.data.repository.AppRepository
 import com.tunalex.sportmap.data.repository.AuthRepository
 import com.tunalex.sportmap.data.repository.UserPreferences
@@ -23,12 +24,9 @@ class SportMapApp : Application() {
     override fun onCreate() {
         super.onCreate()
         container = DefaultAppContainer(this)
-        // Carga semilla la primera vez
+        // Seed data — IGNORE strategy skips rows with existing PKs, inserts new ones
         CoroutineScope(SupervisorJob() + Dispatchers.IO).launch {
-            val placeCount = container.database.placeDao().count()
-            if (placeCount == 0) {
-                container.database.placeDao().insertAll(Seed.PLACES)
-            }
+            container.database.placeDao().insertAll(Seed.PLACES)
             val productCount = container.database.productDao().count()
             if (productCount == 0) {
                 container.database.productDao().insertAll(Seed.PRODUCTS)
@@ -42,6 +40,7 @@ interface AppContainer {
     val authRepository: AuthRepository
     val appRepository: AppRepository
     val userPreferences: UserPreferences
+    val directionsRepository: DirectionsRepository
 }
 
 class DefaultAppContainer(app: Application) : AppContainer {
@@ -61,4 +60,5 @@ class DefaultAppContainer(app: Application) : AppContainer {
         cartDao = database.cartDao(),
         medalDao = database.medalDao()
     )
+    override val directionsRepository: DirectionsRepository = DirectionsRepository()
 }

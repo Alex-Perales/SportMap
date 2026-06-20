@@ -6,9 +6,6 @@
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
     <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
     <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
-    <!-- osmdroid usa cache de tiles. WRITE_EXTERNAL_STORAGE solo afecta a Android < 10. -->
-    <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE"
-        android:maxSdkVersion="29" />
 
     <application
         android:name=".SportMapApp"
@@ -21,6 +18,10 @@
         android:supportsRtl="true"
         android:theme="@style/Theme.SportMap"
         tools:targetApi="31">
+
+        <meta-data
+            android:name="com.google.android.geo.API_KEY"
+            android:value="AIzaSyD4iD5Ys_N7HIiEbxtSKDiC4oxTufAgEPU" />
 
         <activity
             android:name=".MainActivity"

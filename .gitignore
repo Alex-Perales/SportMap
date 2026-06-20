@@ -1,16 +1,38 @@
+# ── Archivos de credenciales y secretos ──────────────────────────────────────
+*.env
+.env
+.env.local
+.env.*.local
+secrets.properties
+keystore.properties
+google-services.json
+GoogleService-Info.plist
+*.keystore
+*.jks
+service-account*.json
+*-service-account.json
+firebase-adminsdk*.json
+
+# ── Android ──────────────────────────────────────────────────────────────────
 *.iml
 .gradle
-/local.properties
-/secrets.properties
+local.properties
+/captures
+.externalNativeBuild
+.cxx
+
+# ── Build outputs ─────────────────────────────────────────────────────────────
+/build
+**/build/
+
+# ── IntelliJ / Android Studio ────────────────────────────────────────────────
 /.idea/caches
 /.idea/libraries
 /.idea/modules.xml
 /.idea/workspace.xml
 /.idea/navEditor.xml
 /.idea/assetWizardSettings.xml
+
+# ── Sistema operativo ─────────────────────────────────────────────────────────
 .DS_Store
-/build
-/captures
-.externalNativeBuild
-.cxx
-local.properties
+Thumbs.db
