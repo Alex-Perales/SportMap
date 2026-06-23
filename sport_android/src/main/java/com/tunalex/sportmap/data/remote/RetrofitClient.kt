@@ -8,8 +8,7 @@ import java.util.concurrent.TimeUnit
 
 object RetrofitClient {
 
-    // 10.0.2.2 → host del emulador  |  192.168.1.37 → dispositivo físico en la misma red
-    const val BASE_URL = "http://192.168.1.37:8000/"
+    const val BASE_URL = "https://sportmap-production.up.railway.app/"
 
     private val okHttp: OkHttpClient by lazy {
         val logging = HttpLoggingInterceptor().apply {
