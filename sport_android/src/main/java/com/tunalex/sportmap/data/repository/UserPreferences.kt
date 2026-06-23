@@ -13,15 +13,22 @@ private val Context.dataStore by preferencesDataStore(name = "sportmap_prefs")
 class UserPreferences(private val context: Context) {
 
     private val keyUserId = longPreferencesKey("current_user_id")
+    // ID asignado por el servidor backend (puede diferir del ID local de Room)
+    private val keyServerUserId = longPreferencesKey("server_user_id")
     private val keyDarkMode = booleanPreferencesKey("dark_mode")
     private val keyGpsEnabled = booleanPreferencesKey("gps_enabled")
 
     val currentUserId: Flow<Long> = context.dataStore.data.map { it[keyUserId] ?: -1L }
+    val serverUserId: Flow<Long> = context.dataStore.data.map { it[keyServerUserId] ?: -1L }
     val darkMode: Flow<Boolean?> = context.dataStore.data.map { it[keyDarkMode] }
     val gpsEnabled: Flow<Boolean> = context.dataStore.data.map { it[keyGpsEnabled] ?: true }
 
     suspend fun setCurrentUserId(id: Long) {
         context.dataStore.edit { it[keyUserId] = id }
+    }
+
+    suspend fun setServerUserId(id: Long) {
+        context.dataStore.edit { it[keyServerUserId] = id }
     }
 
     suspend fun setDarkMode(enabled: Boolean) {

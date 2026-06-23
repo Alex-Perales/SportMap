@@ -6,37 +6,54 @@ services:
     image: postgres:15-alpine
     container_name: sportmap-database
     hostname: sportmap-db
-    
-    # Puertos: interno:externo
+
     ports:
       - "5432:5432"
-    
-    # Variables de entorno
+
     environment:
       POSTGRES_DB: sportmap_db
       POSTGRES_USER: alex
       POSTGRES_PASSWORD: 121416
-      POSTGRES_INITDB_ARGS: "--encoding=UTF8 --locale=es_ES.UTF-8"
-    
-    # Volúmenes para persistencia de datos
+      POSTGRES_INITDB_ARGS: "--encoding=UTF8"
+
     volumes:
-      # Datos de la BD persisten en tu máquina
       - sportmap_data:/var/lib/postgresql/data
-      
-      # Scripts SQL para inicializar
       - ./init:/docker-entrypoint-initdb.d
-    
-    # Health check
+
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U alex -d sportmap_db"]
       interval: 10s
       timeout: 5s
       retries: 5
       start_period: 10s
-    
-    # Reinicio automático
+
     restart: unless-stopped
-    
+
+    networks:
+      - sportmap-network
+
+  # ====================================
+  # FastAPI - Backend REST API
+  # ====================================
+  sportmap-api:
+    build:
+      context: ..
+      dockerfile: Dockerfile
+    container_name: sportmap-api
+    hostname: sportmap-api
+
+    ports:
+      - "8000:8000"
+
+    environment:
+      DATABASE_URL: postgresql://alex:121416@sportmap-db:5432/sportmap_db
+
+    depends_on:
+      sportmap-db:
+        condition: service_healthy
+
+    restart: unless-stopped
+
     networks:
       - sportmap-network
 
@@ -47,58 +64,55 @@ services:
     image: dpage/pgadmin4:latest
     container_name: sportmap-pgadmin
     hostname: pgadmin
-    
+
     ports:
       - "5050:80"
-    
+
     environment:
       PGADMIN_DEFAULT_EMAIL: alex@gmail.com
       PGADMIN_DEFAULT_PASSWORD: 121416
       PGADMIN_CONFIG_SERVER_MODE: 'False'
       PGADMIN_CONFIG_MASTER_PASSWORD_REQUIRED: 'False'
-    
+
     volumes:
       - pgadmin_data:/var/lib/pgadmin
-    
+
     depends_on:
       sportmap-db:
         condition: service_healthy
-    
+
     restart: unless-stopped
-    
+
     networks:
       - sportmap-network
 
   # ====================================
-  # Redis - Cache (Opcional)
+  # Redis - Cache
   # ====================================
   sportmap-redis:
     image: redis:7-alpine
     container_name: sportmap-redis
     hostname: redis
-    
+
     ports:
       - "6379:6379"
-    
+
     volumes:
       - redis_data:/data
-    
+
     command: redis-server --appendonly yes
-    
+
     healthcheck:
       test: ["CMD", "redis-cli", "ping"]
       interval: 10s
       timeout: 5s
       retries: 5
-    
+
     restart: unless-stopped
-    
+
     networks:
       - sportmap-network
 
-# ====================================
-# Volúmenes (Almacenamiento persistente)
-# ====================================
 volumes:
   sportmap_data:
     driver: local
@@ -107,9 +121,6 @@ volumes:
   redis_data:
     driver: local
 
-# ====================================
-# Redes (Para comunicación entre contenedores)
-# ====================================
 networks:
   sportmap-network:
     driver: bridge
