@@ -1,107 +1,107 @@
 # SportMap
 
-Aplicación Android para encontrar canchas, rutas de entrenamiento y espacios de bienestar cerca de ti. Reserva, entrena y mejora día a día.
+Aplicación Android para encontrar canchas, rutas de entrenamiento y espacios de bienestar cerca de ti. Reserva, entrena, compra en la tienda y mejora día a día — con un backend propio en FastAPI y un panel de administración web.
 
-## Stack tecnológico
-
-- **Lenguaje:** Kotlin 2.0
-- **UI:** Jetpack Compose + Material 3
-- **Base de datos:** Room (local)
-- **Navegación:** Navigation Compose
-- **Mapas:** OpenStreetMap (osmdroid) — gratis, sin API key
-- **Imágenes:** Coil
-- **Preferencias:** DataStore
-- **Build:** Gradle Kotlin DSL + Version Catalog (`libs.versions.toml`)
-- **minSdk:** 24 (Android 7.0)
-- **targetSdk / compileSdk:** 35
-
-## Cómo abrir el proyecto
-
-1. Abre **Android Studio** (Hedgehog o superior).
-2. `File` → `Open` → selecciona la carpeta `SportMap`.
-3. Espera a que termine el **Gradle Sync** (descarga dependencias).
-4. Conecta un emulador o dispositivo físico.
-5. Pulsa ▶ **Run 'app'**.
-
-## ✅ Mapas: cero configuración
-
-A diferencia de Google Maps, **osmdroid no requiere API key, ni cuenta, ni tarjeta**. Las dependencias se descargan automáticamente al hacer Gradle Sync. Solo abre el proyecto y compila — el mapa funciona desde el primer arranque.
-
-osmdroid usa los tiles de OpenStreetMap (los mismos que usa Wikipedia). Necesita conexión a internet para descargar los tiles, que luego se cachean en disco.
-
-## Módulos de la app
-
-1. **Autenticación** (Login / Registro) — Local, contraseñas hasheadas con SHA-256.
-2. **Dashboard** — Saludo personalizado, km recorridos, lugares visitados, próxima reserva, sección Premium, FAB para empezar actividad.
-3. **Mapa** — Filtros por deporte (chips), marcadores diferenciados (canchas / trayectos / bienestar), polylines verdes para rutas, polilíneas punteadas para zonas zen, badge de calidad de aire (AQI).
-4. **Detalle de lugar y reservas** — Galería de fotos, descripción, servicios, formulario de reserva con DatePicker / TimePicker.
-5. **Tienda** — Banner promocional, catálogo en grid, ficha de producto con tallas y cantidad, carrito con checkout.
-6. **Configuración** — Modo oscuro, GPS, perfil, distrito, medallas, suscripción Pro, cerrar sesión, eliminar cuenta, ayuda y FAQ, acerca de.
-
-## Estructura del proyecto
+## Estructura del repositorio
 
 ```
 SportMap/
-├── app/
-│   ├── src/main/
-│   │   ├── AndroidManifest.xml
-│   │   ├── java/com/tunalex/sportmap/
-│   │   │   ├── MainActivity.kt
-│   │   │   ├── SportMapApp.kt          # Application class
-│   │   │   ├── data/
-│   │   │   │   ├── local/              # Room: entities, DAOs, Database
-│   │   │   │   └── repository/         # AuthRepo, AppRepo, UserPreferences
-│   │   │   ├── navigation/             # NavGraph, rutas, BottomNav
-│   │   │   ├── ui/
-│   │   │   │   ├── auth/               # Login, SignUp
-│   │   │   │   ├── dashboard/
-│   │   │   │   ├── map/                # MapScreen con osmdroid
-│   │   │   │   ├── place/
-│   │   │   │   ├── store/              # Store, ProductDetail, Cart
-│   │   │   │   ├── settings/           # Settings, Medals, Premium, EditProfile
-│   │   │   │   ├── components/         # Reusables (BrandLogo)
-│   │   │   │   └── theme/              # Color, Theme, Type
-│   │   │   └── viewmodel/              # ViewModelFactory
-│   │   └── res/                        # strings, themes, drawables, mipmap
-│   └── build.gradle.kts
-├── gradle/
-│   ├── libs.versions.toml              # Version catalog
-│   └── wrapper/
-├── settings.gradle.kts
-└── build.gradle.kts                    # Top-level
+├── sport_android/     # App Android (Kotlin + Jetpack Compose)
+├── sport_backend/      # Backend (FastAPI + Postgres) y panel de administración
+└── QR.jpeg              # QR de Yape/Plin usado como único medio de pago
 ```
+
+## Stack tecnológico
+
+**App Android**
+- Kotlin 2.0 + Jetpack Compose + Material 3
+- Room (base de datos local, offline-first)
+- Navigation Compose
+- Google Maps Compose + Directions API (rutas)
+- Retrofit + OkHttp (consumo del backend)
+- Firebase Cloud Messaging (notificaciones push)
+- Coil (imágenes), DataStore (preferencias)
+- minSdk 24 · targetSdk / compileSdk 35
+
+**Backend**
+- FastAPI + asyncpg (sin ORM) + PostgreSQL
+- Panel de administración server-side (Jinja2 + sesiones)
+- Supabase Storage para imágenes (con respaldo a disco local si no está configurado)
+- Firebase Admin SDK para push
+- Docker / Docker Compose para desarrollo local
+
+## Cómo levantar el proyecto
+
+### 1. Backend (Docker)
+
+```bash
+docker compose -f sport_backend/docker/docker-compose.yml up -d --build
+```
+
+Levanta 4 contenedores: la API (`:8000`), Postgres (`:5432`), pgAdmin (`:5050`) y Redis (`:6379`). Al arrancar, corre las migraciones y siembra datos de ejemplo (lugares, productos, anuncios y un usuario administrador).
+
+Salud del servicio: `http://localhost:8000/health`
+
+### 2. App Android
+
+1. Abre `sport_android/` en Android Studio.
+2. Espera el Gradle Sync.
+3. En **debug**, la app apunta automáticamente al backend local (`10.0.2.2:8000` desde el emulador) — no hace falta configurar nada. En **release** apunta a producción (Railway).
+4. Ejecuta ▶ en un emulador o dispositivo.
+
+### 3. Panel de administración
+
+`http://localhost:8000/admin/login`
+
+Usuario sembrado por defecto (solo para desarrollo local — cámbialo antes de exponer esto en producción):
+- **Correo:** `admin@gmail.com`
+- **Contraseña:** `12345`
+
+Desde ahí se administran:
+| Sección | Qué permite |
+|---|---|
+| **Productos** | Crear/editar/borrar productos de la tienda, precio, foto, categoría, oferta/descuento |
+| **Lugares** | Crear/editar/borrar canchas y espacios (nombre, deporte, coordenadas, foto, precio por hora) |
+| **Pedidos** | Revisar comprobantes de pago, aprobar, rechazar (con motivo) o marcar como reembolsado |
+| **Anuncios** | Editar las tarjetas de "Recomendados para ti" del Dashboard |
+
+## Variables de entorno del backend
+
+| Variable | Para qué | Si falta |
+|---|---|---|
+| `DATABASE_URL` | Conexión a Postgres | Requerida |
+| `SUPABASE_URL` / `SUPABASE_SERVICE_KEY` | Subir fotos (comprobantes, perfiles, productos, lugares) a Supabase Storage | Las fotos se guardan en disco local del servidor en su lugar |
+| `GMAIL_ADDRESS` / `GMAIL_APP_PASSWORD` | Enviar correos de confirmación/rechazo de pago | El envío se omite (se loguea, no rompe el flujo) |
+| `FIREBASE_SERVICE_ACCOUNT_JSON` (o `FIREBASE_SERVICE_ACCOUNT_PATH`) | Notificaciones push al aprobar/rechazar un pedido | El envío se omite |
+| `SECRET_KEY` | Firma de sesiones del panel admin | Usa un valor de desarrollo por defecto |
+
+## Módulos de la app
+
+1. **Autenticación** — Login, registro y "olvidé mi contraseña" (pregunta de seguridad), local + sincronizado con el backend.
+2. **Dashboard** — Estadísticas reales según tus reservas (deporte favorito, racha, horas más activas), no datos inventados; estado vacío con llamada a la acción si aún no reservaste nada.
+3. **Mapa** — Google Maps, filtros por deporte, búsqueda, ubicación en tiempo real.
+4. **Detalle de lugar y reservas** — Galería, reseñas de otros usuarios, favoritos, formulario de reserva con validación de fecha/hora.
+5. **Pago único: Yape/Plin** — Se muestra un QR fijo, el usuario sube su comprobante, y el pago queda "pendiente" hasta que un administrador lo aprueba o rechaza (con motivo) desde el panel. No hay reembolso automático — se hace manual y el admin lo marca como reembolsado.
+6. **Mis pedidos** — Historial de pagos con su estado (pendiente / aprobado / rechazado / reembolsado); si fue rechazado, se puede volver a subir el comprobante sin crear un pedido duplicado.
+7. **Tienda** — Catálogo con filtros por categoría, ficha de producto, carrito, checkout por el mismo flujo de Yape/Plin.
+8. **Configuración** — Modo oscuro, GPS, perfil (foto vía Supabase), medallas, favoritos, historial de reservas, suscripción Pro, ayuda y FAQ.
+9. **Notificaciones push** — Aviso en la bandeja del sistema cuando se aprueba o rechaza un pago (Firebase Cloud Messaging).
 
 ## Datos semilla
 
-Al primer arranque la app carga automáticamente:
-- **9 lugares** en Lima (Miraflores, San Isidro, Magdalena, Surco)
-- **8 productos** en la tienda (calzado, balones, ropa, accesorios)
-- **8 medallas** por usuario (al registrarse)
+Al arrancar el backend por primera vez se crean automáticamente:
+- **12 lugares** en Lima
+- **9 productos** de tienda
+- **3 anuncios** de ejemplo para "Recomendados para ti"
+- **1 usuario administrador** (ver credenciales arriba)
 
-## Paleta de colores
+## Pendientes conocidos
 
-Basada en degradados de azul:
-
-| Nombre | HEX | Uso |
-|--------|-----|-----|
-| Sky Light | `#A8D5F2` | Acentos suaves |
-| Blue Light | `#7FB8F5` | Estados secundarios |
-| Blue Medium | `#3B82F6` | Iconos |
-| Blue Vibrant | `#2563EB` | Primario (botones, links) |
-| Indigo Deep | `#3730D9` | Gradientes profundos, modo oscuro |
-
-## Atribución
-
-Los mapas usan datos de © OpenStreetMap contributors, disponibles bajo la [Open Database License (ODbL)](https://www.openstreetmap.org/copyright). La atribución se muestra en pantalla en la parte inferior izquierda del mapa, como exige la licencia.
-
-## Próximos pasos sugeridos
-
-- Integrar pasarela de pago real (Culqi / Stripe) para Premium y tienda.
-- Sustituir cabecera del Dashboard por API de clima.
-- Conectar API de calidad de aire (Open-Meteo, IQAir) para AQI real.
-- Sustituir Auth local por Firebase / backend propio.
-- Notificaciones push (Firebase Messaging).
+- Configurar `SUPABASE_URL` / `SUPABASE_SERVICE_KEY` para que las fotos no se guarden en el disco (efímero) del servidor en producción.
+- Configurar el envío real de correos (`GMAIL_ADDRESS` / `GMAIL_APP_PASSWORD`).
+- Desplegar los cambios del backend a Railway (hoy solo corren en Docker local).
+- Conectar el registro de actividades (km recorridos) cuando se termina una ruta en el mapa — hoy esa estadística queda en 0 porque nada la escribe todavía.
 
 ---
 
-**Package:** `com.tunalex.sportmap` · **Versión:** 1.0
+**Package Android:** `com.tunalex.sportmap` · **Backend:** FastAPI + Postgres
