@@ -32,6 +32,10 @@ class UserUpdate(BaseModel):
     is_premium: Optional[bool] = None
 
 
+class FcmTokenUpdate(BaseModel):
+    token: str
+
+
 # ── Place ───────────────────────────────────────────────────────────────────
 
 class PlaceResponse(BaseModel):
@@ -108,6 +112,38 @@ class CartItemCreate(BaseModel):
 
 class CartItemResponse(CartItemCreate):
     id: int
+
+
+# ── Ad (anuncio de "Recomendados para ti", administrable) ───────────────────
+
+class AdResponse(BaseModel):
+    id: int
+    image_url: str
+    badge_text: Optional[str] = None
+    title: str
+    subtitle: Optional[str] = None
+    price: Optional[float] = None
+    link_type: str
+    link_target: Optional[str] = None
+    is_active: bool
+    sort_order: int
+
+
+# ── Order (pedido pagado por Yape/Plin, pendiente de revisión) ───────────────
+
+class OrderResponse(BaseModel):
+    id: int
+    user_id: int
+    order_type: str
+    reference_id: Optional[int] = None
+    amount: float
+    items_json: Optional[str] = None
+    status: str
+    proof_image_path: str
+    admin_note: Optional[str] = None
+    motivo_rechazo: Optional[str] = None
+    created_at: int
+    reviewed_at: Optional[int] = None
 
 
 # ── Medal ────────────────────────────────────────────────────────────────────

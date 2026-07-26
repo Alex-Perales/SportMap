@@ -1,0 +1,46 @@
+{% extends "base.html" %}
+{% block title %}Anuncios · SportMap Admin{% endblock %}
+{% block content %}
+<div class="top-row">
+    <h2>Anuncios · Recomendados para ti ({{ ads|length }})</h2>
+    <a class="btn" href="/admin/ads/new">+ Nuevo anuncio</a>
+</div>
+
+{% if flash %}<div class="flash">{{ flash }}</div>{% endif %}
+
+<div class="card">
+    {% if ads %}
+    <table>
+        <thead>
+            <tr>
+                <th></th>
+                <th>Título</th>
+                <th>Etiqueta</th>
+                <th>Orden</th>
+                <th>Activo</th>
+                <th></th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for a in ads %}
+            <tr>
+                <td>{% if a.image_url %}<img class="thumb" src="{{ a.image_url }}" alt="">{% endif %}</td>
+                <td>{{ a.title }}</td>
+                <td>{{ a.badge_text or "—" }}</td>
+                <td>{{ a.sort_order }}</td>
+                <td>{{ "Sí" if a.is_active else "No" }}</td>
+                <td class="actions">
+                    <a class="btn btn-sm btn-secondary" href="/admin/ads/{{ a.id }}/edit">Editar</a>
+                    <form class="inline" method="post" action="/admin/ads/{{ a.id }}/delete" onsubmit="return confirm('¿Eliminar {{ a.title }}?');">
+                        <button class="btn btn-sm btn-danger" type="submit">Eliminar</button>
+                    </form>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    {% else %}
+    <div class="empty">Aún no hay anuncios. Sin ninguno, la app usa un anuncio de reserva por defecto.</div>
+    {% endif %}
+</div>
+{% endblock %}

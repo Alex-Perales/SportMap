@@ -1,12 +1,15 @@
 package com.tunalex.sportmap.data.repository
 
+import com.google.firebase.messaging.FirebaseMessaging
 import com.tunalex.sportmap.data.local.Seed
 import com.tunalex.sportmap.data.local.dao.MedalDao
 import com.tunalex.sportmap.data.local.dao.UserDao
 import com.tunalex.sportmap.data.local.entity.UserEntity
 import com.tunalex.sportmap.data.remote.ApiService
+import com.tunalex.sportmap.data.remote.FcmTokenRequest
 import com.tunalex.sportmap.data.remote.LoginRequest
 import com.tunalex.sportmap.data.remote.RegisterRequest
+import kotlinx.coroutines.tasks.await
 import java.security.MessageDigest
 
 class AuthRepository(
@@ -21,7 +24,13 @@ class AuthRepository(
         data class Error(val message: String) : AuthResult()
     }
 
-    suspend fun signUp(name: String, email: String, password: String): AuthResult {
+    suspend fun signUp(
+        name: String,
+        email: String,
+        password: String,
+        securityQuestion: String,
+        securityAnswer: String
+    ): AuthResult {
         if (name.isBlank() || email.isBlank() || password.isBlank()) {
             return AuthResult.Error("Completa todos los campos.")
         }
@@ -30,6 +39,9 @@ class AuthRepository(
         }
         if (password.length < 6) {
             return AuthResult.Error("La contraseña debe tener al menos 6 caracteres.")
+        }
+        if (securityQuestion.isBlank() || securityAnswer.isBlank()) {
+            return AuthResult.Error("Selecciona una pregunta de seguridad y responde.")
         }
         val existing = userDao.findByEmail(email.lowercase().trim())
         if (existing != null) {
@@ -41,7 +53,9 @@ class AuthRepository(
         val newUser = UserEntity(
             name = name.trim(),
             email = email.lowercase().trim(),
-            passwordHash = passwordHash
+            passwordHash = passwordHash,
+            securityQuestion = securityQuestion,
+            securityAnswerHash = hash(securityAnswer.trim().lowercase())
         )
         val localId = userDao.insert(newUser)
         medalDao.insertAll(Seed.medalsForUser(localId))
@@ -57,6 +71,7 @@ class AuthRepository(
                 )
             )
             prefs.setServerUserId(serverUser.id)
+            registerFcmToken(serverUser.id)
         } catch (_: Exception) {
             // Backend no disponible; continúa con modo local
         }
@@ -80,6 +95,7 @@ class AuthRepository(
                 )
             )
             prefs.setServerUserId(serverUser.id)
+            registerFcmToken(serverUser.id)
 
             // Sincronizar usuario con Room local
             val localUser = userDao.findByEmail(email.lowercase().trim())
@@ -114,6 +130,25 @@ class AuthRepository(
         return AuthResult.Success(user.id)
     }
 
+    /** Devuelve la pregunta de seguridad del usuario, o null si no existe la cuenta localmente. */
+    suspend fun getSecurityQuestion(email: String): String? {
+        val user = userDao.findByEmail(email.lowercase().trim())
+        return user?.securityQuestion?.takeIf { it.isNotBlank() }
+    }
+
+    suspend fun resetPassword(email: String, securityAnswer: String, newPassword: String): AuthResult {
+        if (newPassword.length < 6) {
+            return AuthResult.Error("La contraseña debe tener al menos 6 caracteres.")
+        }
+        val user = userDao.findByEmail(email.lowercase().trim())
+            ?: return AuthResult.Error("No encontramos una cuenta con ese email en este dispositivo.")
+        if (user.securityAnswerHash != hash(securityAnswer.trim().lowercase())) {
+            return AuthResult.Error("La respuesta no coincide con la registrada.")
+        }
+        userDao.update(user.copy(passwordHash = hash(newPassword)))
+        return AuthResult.Success(user.id)
+    }
+
     suspend fun logout() {
         prefs.setCurrentUserId(-1L)
         prefs.setServerUserId(-1L)
@@ -130,6 +165,16 @@ class AuthRepository(
         userDao.deleteById(userId)
         prefs.setCurrentUserId(-1L)
         prefs.setServerUserId(-1L)
+    }
+
+    /** Envía el token FCM actual del dispositivo al backend, asociado al
+     * usuario recién logueado. Best-effort: si falla, la app sigue
+     * funcionando, solo no llegarán notificaciones push a este dispositivo. */
+    private suspend fun registerFcmToken(serverUserId: Long) {
+        try {
+            val token = FirebaseMessaging.getInstance().token.await()
+            api.updateFcmToken(serverUserId, FcmTokenRequest(token))
+        } catch (_: Exception) {}
     }
 
     private fun hash(input: String): String {

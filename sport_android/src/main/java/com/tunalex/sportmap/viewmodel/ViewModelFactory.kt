@@ -8,10 +8,13 @@ import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.ViewModelProvider.AndroidViewModelFactory.Companion.APPLICATION_KEY
 import com.tunalex.sportmap.SportMapApp
 import com.tunalex.sportmap.ui.auth.AuthViewModel
+import com.tunalex.sportmap.ui.auth.ForgotPasswordViewModel
 import com.tunalex.sportmap.ui.dashboard.DashboardViewModel
 import com.tunalex.sportmap.ui.map.MapViewModel
 import com.tunalex.sportmap.ui.map.RouteViewModel
 import com.tunalex.sportmap.ui.place.PlaceDetailViewModel
+import com.tunalex.sportmap.ui.settings.FavoritesViewModel
+import com.tunalex.sportmap.ui.settings.OrdersHistoryViewModel
 import com.tunalex.sportmap.ui.settings.ReservationHistoryViewModel
 import com.tunalex.sportmap.ui.settings.SettingsViewModel
 import com.tunalex.sportmap.ui.store.StoreViewModel
@@ -24,6 +27,10 @@ object SportMapViewModels {
         initializer {
             val app = (this[APPLICATION_KEY] as SportMapApp)
             AuthViewModel(app.container.authRepository)
+        }
+        initializer {
+            val app = (this[APPLICATION_KEY] as SportMapApp)
+            ForgotPasswordViewModel(app.container.authRepository)
         }
         initializer {
             val app = (this[APPLICATION_KEY] as SportMapApp)
@@ -64,6 +71,14 @@ object SportMapViewModels {
         initializer {
             val app = (this[APPLICATION_KEY] as SportMapApp)
             ReservationHistoryViewModel(app.container.appRepository, app.container.userPreferences)
+        }
+        initializer {
+            val app = (this[APPLICATION_KEY] as SportMapApp)
+            FavoritesViewModel(app.container.appRepository, app.container.userPreferences)
+        }
+        initializer {
+            val app = (this[APPLICATION_KEY] as SportMapApp)
+            OrdersHistoryViewModel(app.container.appRepository, app.container.userPreferences)
         }
     }
 }

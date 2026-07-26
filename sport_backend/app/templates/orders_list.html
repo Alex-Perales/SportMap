@@ -1,0 +1,79 @@
+{% extends "base.html" %}
+{% block title %}Pedidos · SportMap Admin{% endblock %}
+{% block content %}
+<div class="top-row">
+    <h2>Pedidos ({{ orders|length }})</h2>
+</div>
+
+{% if flash %}<div class="flash">{{ flash }}</div>{% endif %}
+
+<div class="card">
+    {% if orders %}
+    <table>
+        <thead>
+            <tr>
+                <th>Comprobante</th>
+                <th>Usuario</th>
+                <th>Tipo</th>
+                <th>Monto</th>
+                <th>Fecha</th>
+                <th>Estado</th>
+                <th></th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for o in orders %}
+            <tr>
+                <td><a href="{{ o.proof_image_path }}" target="_blank"><img class="thumb" src="{{ o.proof_image_path }}" alt="comprobante" style="width:64px;height:64px"></a></td>
+                <td>{{ o.user_name }}<br><span style="color:#6b7280;font-size:12px">{{ o.user_email }}</span></td>
+                <td>{{ {"store": "Tienda", "reservation": "Reserva", "premium": "Premium"}.get(o.order_type, o.order_type) }}</td>
+                <td>S/. {{ "%.2f"|format(o.amount) }}</td>
+                <td>{{ o.created_at }}</td>
+                <td>
+                    {% if o.status == "pendiente" %}
+                        <span style="color:#b45309">Pendiente</span>
+                    {% elif o.status == "rechazado" %}
+                        <span style="color:#dc2626">Rechazado</span>
+                        {% if o.motivo_rechazo %}<br><span style="color:#6b7280;font-size:11px">{{ o.motivo_rechazo }}</span>{% endif %}
+                    {% elif o.status == "cancelado_reembolsado" %}
+                        <span style="color:#6b7280">Reembolsado</span>
+                    {% else %}
+                        {{ o.status }}
+                    {% endif %}
+                </td>
+                <td class="actions">
+                    {% if o.status == "pendiente" %}
+                        <form class="inline" method="post" action="/admin/orders/{{ o.id }}/approve">
+                            <button class="btn btn-sm" type="submit">Aprobar</button>
+                        </form>
+                        <form class="inline" method="post" action="/admin/orders/{{ o.id }}/reject"
+                              onsubmit="return confirm('¿Rechazar este pedido?');"
+                              style="display:inline-flex;gap:4px;align-items:center">
+                            <select name="motivo" style="width:auto;font-size:12px;padding:4px"
+                                    onchange="this.nextElementSibling.style.display = (this.value === 'Otro') ? 'inline-block' : 'none'">
+                                <option value="Monto no coincide">Monto no coincide</option>
+                                <option value="Comprobante ilegible">Comprobante ilegible</option>
+                                <option value="No se encontró el pago">No se encontró el pago</option>
+                                <option value="Otro">Otro</option>
+                            </select>
+                            <input type="text" name="motivo_otro" placeholder="Detalle..." style="display:none;width:110px;font-size:12px;padding:4px">
+                            <button class="btn btn-sm btn-danger" type="submit">Rechazar</button>
+                        </form>
+                    {% elif o.status == "rechazado" %}
+                        <form class="inline" method="post" action="/admin/orders/{{ o.id }}/marcar-reembolsado"
+                              onsubmit="return confirm('¿Confirmas que ya hiciste la devolución manual por Yape/Plin?');">
+                            <button class="btn btn-sm btn-secondary" type="submit">Marcar como reembolsado</button>
+                        </form>
+                    {% elif o.status == "cancelado_reembolsado" %}
+                        <span style="color:#22c55e;font-size:13px">✓ Reembolsado</span>
+                    {% endif %}
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    {% else %}
+    <div class="empty">No hay pedidos pendientes de revisión.</div>
+    {% endif %}
+</div>
+{% endblock %}

@@ -73,7 +73,7 @@ fun CartScreen(
             TopAppBar(
                 title = { Text("Tu carrito") },
                 navigationIcon = {
-                    IconButton(onClick = onBack) { Icon(Icons.Filled.ArrowBack, null) }
+                    IconButton(onClick = onBack) { Icon(Icons.Filled.ArrowBack, contentDescription = "Volver") }
                 }
             )
         },
@@ -116,10 +116,8 @@ fun CartScreen(
                 amount = state.total,
                 sheetState = sheetState,
                 onDismiss = { showPaymentSheet = false },
-                onPay = {
-                    showPaymentSheet = false
-                    vm.checkout()
-                }
+                onSubmitProof = { file -> vm.submitCheckoutPayment(file) },
+                onSuccess = { showPaymentSheet = false }
             )
         }
 
@@ -181,7 +179,7 @@ fun CartScreen(
                                 )
                             }
                             IconButton(onClick = { vm.remove(item.id) }) {
-                                Icon(Icons.Filled.Delete, null,
+                                Icon(Icons.Filled.Delete, contentDescription = "Eliminar producto del carrito",
                                     tint = MaterialTheme.colorScheme.error)
                             }
                         }

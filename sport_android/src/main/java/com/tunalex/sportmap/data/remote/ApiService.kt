@@ -1,6 +1,8 @@
 package com.tunalex.sportmap.data.remote
 
 import com.google.gson.annotations.SerializedName
+import okhttp3.MultipartBody
+import okhttp3.RequestBody
 import retrofit2.http.*
 
 // ── DTOs ────────────────────────────────────────────────────────────────────
@@ -129,6 +131,34 @@ data class MedalDto(
     val tier: String
 )
 
+data class OrderDto(
+    val id: Long,
+    @SerializedName("user_id") val userId: Long,
+    @SerializedName("order_type") val orderType: String,
+    @SerializedName("reference_id") val referenceId: Long?,
+    val amount: Double,
+    @SerializedName("items_json") val itemsJson: String?,
+    val status: String,
+    @SerializedName("proof_image_path") val proofImagePath: String,
+    @SerializedName("motivo_rechazo") val motivoRechazo: String?,
+    @SerializedName("created_at") val createdAt: Long
+)
+
+data class FcmTokenRequest(val token: String)
+
+data class AdDto(
+    val id: Long,
+    @SerializedName("image_url") val imageUrl: String,
+    @SerializedName("badge_text") val badgeText: String?,
+    val title: String,
+    val subtitle: String?,
+    val price: Double?,
+    @SerializedName("link_type") val linkType: String,
+    @SerializedName("link_target") val linkTarget: String?,
+    @SerializedName("is_active") val isActive: Boolean,
+    @SerializedName("sort_order") val sortOrder: Int
+)
+
 data class UserUpdateRequest(
     val name: String? = null,
     val district: String? = null,
@@ -156,6 +186,13 @@ interface ApiService {
 
     @DELETE("api/users/{id}")
     suspend fun deleteUser(@Path("id") id: Long)
+
+    @Multipart
+    @POST("api/users/{id}/photo")
+    suspend fun uploadProfilePhoto(@Path("id") id: Long, @Part photo: MultipartBody.Part): UserResponse
+
+    @PUT("api/users/{id}/fcm-token")
+    suspend fun updateFcmToken(@Path("id") id: Long, @Body request: FcmTokenRequest)
 
     // Places
     @GET("api/places/")
@@ -204,4 +241,30 @@ interface ApiService {
     // Medals
     @GET("api/medals/user/{userId}")
     suspend fun getUserMedals(@Path("userId") userId: Long): List<MedalDto>
+
+    // Orders (pedidos pagados por Yape/Plin, pendientes de revisión)
+    @Multipart
+    @POST("api/orders/")
+    suspend fun createOrder(
+        @Part("user_id") userId: RequestBody,
+        @Part("order_type") orderType: RequestBody,
+        @Part("amount") amount: RequestBody,
+        @Part("reference_id") referenceId: RequestBody?,
+        @Part("items_json") itemsJson: RequestBody?,
+        @Part comprobante: MultipartBody.Part
+    ): OrderDto
+
+    @GET("api/orders/user/{userId}")
+    suspend fun getUserOrders(@Path("userId") userId: Long): List<OrderDto>
+
+    @Multipart
+    @POST("api/orders/{orderId}/reupload")
+    suspend fun reuploadOrderProof(
+        @Path("orderId") orderId: Long,
+        @Part comprobante: MultipartBody.Part
+    ): OrderDto
+
+    // Ads ("Recomendados para ti")
+    @GET("api/ads/")
+    suspend fun getAds(): List<AdDto>
 }

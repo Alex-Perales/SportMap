@@ -13,12 +13,17 @@ CREATE TABLE IF NOT EXISTS users (
     bio TEXT,
     profile_image_url VARCHAR(500),
     is_premium BOOLEAN DEFAULT false,
+    is_admin BOOLEAN DEFAULT false,
     kyc_status VARCHAR(50) DEFAULT 'pending',
     rating DECIMAL(3,2) DEFAULT 0.0,
     total_activities INTEGER DEFAULT 0,
+    fcm_token VARCHAR(500),
     created_at BIGINT NOT NULL,
     updated_at BIGINT NOT NULL
 );
+
+ALTER TABLE users ADD COLUMN IF NOT EXISTS is_admin BOOLEAN DEFAULT false;
+ALTER TABLE users ADD COLUMN IF NOT EXISTS fcm_token VARCHAR(500);
 
 CREATE TABLE IF NOT EXISTS places (
     id SERIAL PRIMARY KEY,
@@ -127,6 +132,41 @@ CREATE TABLE IF NOT EXISTS notifications (
     is_read BOOLEAN DEFAULT false,
     created_at BIGINT NOT NULL
 );
+
+-- Anuncios/banners de la sección "Recomendados para ti", administrables desde /admin/ads.
+CREATE TABLE IF NOT EXISTS ads (
+    id SERIAL PRIMARY KEY,
+    image_url VARCHAR(500) NOT NULL,
+    badge_text VARCHAR(50),
+    title VARCHAR(255) NOT NULL,
+    subtitle VARCHAR(255),
+    price DECIMAL(8,2),
+    link_type VARCHAR(20) NOT NULL DEFAULT 'none',  -- 'none' | 'premium' | 'product' | 'external'
+    link_target VARCHAR(500),
+    is_active BOOLEAN DEFAULT true,
+    sort_order INTEGER DEFAULT 0,
+    created_at BIGINT NOT NULL,
+    updated_at BIGINT NOT NULL
+);
+
+-- Pedidos pagados por Yape/Plin con comprobante, pendientes de revisión manual.
+CREATE TABLE IF NOT EXISTS orders (
+    id SERIAL PRIMARY KEY,
+    user_id INTEGER NOT NULL,
+    order_type VARCHAR(20) NOT NULL,      -- 'store' | 'reservation' | 'premium'
+    reference_id INTEGER,                 -- reservation_id cuando order_type='reservation'
+    amount DECIMAL(10,2) NOT NULL,
+    items_json TEXT,                      -- snapshot del carrito cuando order_type='store'
+    status VARCHAR(30) NOT NULL DEFAULT 'pendiente',  -- 'pendiente' | 'aprobado' | 'rechazado' | 'cancelado_reembolsado'
+    proof_image_path VARCHAR(500) NOT NULL,
+    admin_note TEXT,
+    motivo_rechazo TEXT,
+    created_at BIGINT NOT NULL,
+    reviewed_at BIGINT
+);
+
+ALTER TABLE orders ADD COLUMN IF NOT EXISTS motivo_rechazo TEXT;
+ALTER TABLE orders ALTER COLUMN status TYPE VARCHAR(30);
 """
 
 

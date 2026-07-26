@@ -1,0 +1,63 @@
+{% extends "base.html" %}
+{% block title %}{{ "Editar" if place else "Nuevo" }} lugar · SportMap Admin{% endblock %}
+{% block content %}
+<div class="top-row">
+    <h2>{{ "Editar lugar" if place else "Nuevo lugar" }}</h2>
+    <a class="btn btn-secondary" href="/admin/places">Volver</a>
+</div>
+
+<div class="card">
+    <form method="post" enctype="multipart/form-data">
+        <label>Nombre *</label>
+        <input type="text" name="name" required value="{{ place.name if place else '' }}">
+
+        <label>Tipo de deporte *</label>
+        <select name="sport_type" required>
+            {% for key, label in [("futbol","Fútbol"), ("voley","Vóley"), ("tenis","Tenis"), ("correr","Correr"), ("natacion","Natación"), ("ciclismo","Ciclismo"), ("bienestar","Bienestar")] %}
+            <option value="{{ key }}" {% if place and place.sport_type == key %}selected{% endif %}>{{ label }}</option>
+            {% endfor %}
+        </select>
+
+        <label>Categoría *</label>
+        <select name="category" required>
+            {% for key, label in [("field","Cancha (field)"), ("trayecto","Ruta / trayecto"), ("wellness","Zona de bienestar")] %}
+            <option value="{{ key }}" {% if place and place.category == key %}selected{% endif %}>{{ label }}</option>
+            {% endfor %}
+        </select>
+
+        <label>Dirección</label>
+        <input type="text" name="address" placeholder="Av. Ejemplo 123, Miraflores" value="{{ place.address if place else '' }}">
+
+        <label>Latitud *</label>
+        <input type="number" step="0.00000001" name="lat" required value="{{ place.lat if place else '' }}">
+
+        <label>Longitud *</label>
+        <input type="number" step="0.00000001" name="lng" required value="{{ place.lng if place else '' }}">
+
+        <label>Descripción</label>
+        <textarea name="description" rows="3">{{ place.description if place else '' }}</textarea>
+
+        <label>Servicios (separados por coma)</label>
+        <input type="text" name="services" placeholder="seguridad,baños,iluminación" value="{{ place.services if place else '' }}">
+
+        {% if place and place.photo_urls %}
+        <img class="thumb" src="{{ place.photo_urls.split(',')[0] }}" alt="" style="width:80px;height:80px;margin-top:8px">
+        {% endif %}
+        <label>Subir foto (reemplaza la URL de abajo si eliges un archivo)</label>
+        <input type="file" name="photo_file" accept="image/*">
+
+        <label>URL de foto</label>
+        <input type="url" name="photo_url" placeholder="https://images.unsplash.com/..." value="{{ place.photo_urls if place else '' }}">
+
+        <div class="checkbox-row">
+            <input type="checkbox" id="is_private" name="is_private" {% if not place or place.is_private %}checked{% endif %}>
+            <label style="margin:0" for="is_private">Privado (requiere reserva y pago)</label>
+        </div>
+
+        <label>Precio por hora (S/.)</label>
+        <input type="number" step="0.01" min="0" name="price_per_hour" value="{{ place.price_per_hour if place else 0 }}">
+
+        <button class="btn" type="submit" style="margin-top:20px">{{ "Guardar cambios" if place else "Crear lugar" }}</button>
+    </form>
+</div>
+{% endblock %}

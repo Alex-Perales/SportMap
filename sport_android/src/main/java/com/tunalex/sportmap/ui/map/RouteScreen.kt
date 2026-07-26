@@ -235,7 +235,7 @@ private fun OriginSelectionScreen(
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     IconButton(onClick = onBack) {
-                        Icon(Icons.Filled.ArrowBack, null, tint = MaterialTheme.colorScheme.onSurface)
+                        Icon(Icons.Filled.ArrowBack, contentDescription = "Volver", tint = MaterialTheme.colorScheme.onSurface)
                     }
 
                     // Origin field
@@ -428,7 +428,7 @@ private fun MapPickerScreen(
             verticalAlignment = Alignment.CenterVertically
         ) {
             IconButton(onClick = onCancel) {
-                Icon(Icons.Filled.ArrowBack, null, tint = Color.DarkGray)
+                Icon(Icons.Filled.ArrowBack, contentDescription = "Cancelar", tint = Color.DarkGray)
             }
             Text(
                 text = when {
@@ -528,7 +528,7 @@ private fun RouteResultScreen(
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 IconButton(onClick = onBack) {
-                    Icon(Icons.Filled.ArrowBack, null, tint = MaterialTheme.colorScheme.onSurface)
+                    Icon(Icons.Filled.ArrowBack, contentDescription = "Volver", tint = MaterialTheme.colorScheme.onSurface)
                 }
                 Row(
                     modifier = Modifier.weight(1f),

@@ -1,0 +1,46 @@
+{% extends "base.html" %}
+{% block title %}Canchas y lugares · SportMap Admin{% endblock %}
+{% block content %}
+<div class="top-row">
+    <h2>Canchas y lugares ({{ places|length }})</h2>
+    <a class="btn" href="/admin/places/new">+ Nuevo lugar</a>
+</div>
+
+{% if flash %}<div class="flash">{{ flash }}</div>{% endif %}
+
+<div class="card">
+    {% if places %}
+    <table>
+        <thead>
+            <tr>
+                <th></th>
+                <th>Nombre</th>
+                <th>Deporte</th>
+                <th>Categoría</th>
+                <th>Privado</th>
+                <th></th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for p in places %}
+            <tr>
+                <td>{% if p.photo_urls %}<img class="thumb" src="{{ p.photo_urls.split(',')[0] }}" alt=""> {% endif %}</td>
+                <td>{{ p.name }}</td>
+                <td>{{ p.sport_type }}</td>
+                <td>{{ p.category }}</td>
+                <td>{{ "Sí" if p.is_private else "No" }}</td>
+                <td class="actions">
+                    <a class="btn btn-sm btn-secondary" href="/admin/places/{{ p.id }}/edit">Editar</a>
+                    <form class="inline" method="post" action="/admin/places/{{ p.id }}/delete" onsubmit="return confirm('¿Eliminar {{ p.name }}? Esto también borra sus reseñas y favoritos asociados.');">
+                        <button class="btn btn-sm btn-danger" type="submit">Eliminar</button>
+                    </form>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    {% else %}
+    <div class="empty">Aún no hay lugares. Crea el primero con "+ Nuevo lugar".</div>
+    {% endif %}
+</div>
+{% endblock %}

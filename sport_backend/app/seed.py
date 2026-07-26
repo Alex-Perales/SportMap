@@ -1,7 +1,23 @@
 """Seed de datos iniciales: lugares y productos que deben coincidir con Android Seed.kt."""
+import hashlib
 import time
 
 NOW = 1686700000000  # timestamp fijo para seed
+
+ADMIN_EMAIL = "admin@gmail.com"
+ADMIN_PASSWORD = "12345"
+
+
+async def seed_admin_user(conn):
+    """Crea el usuario administrador si no existe (idempotente)."""
+    password_hash = hashlib.sha256(ADMIN_PASSWORD.encode()).hexdigest()
+    now = int(time.time() * 1000)
+    await conn.execute(
+        """INSERT INTO users (name, email, password_hash, district, is_premium, is_admin, created_at, updated_at)
+           VALUES ('Administrador', $1, $2, 'Admin', FALSE, TRUE, $3, $3)
+           ON CONFLICT (email) DO UPDATE SET is_admin = TRUE, password_hash = $2""",
+        ADMIN_EMAIL, password_hash, now
+    )
 
 PLACES = [
     (1, "Cancha Fútbol San Borja",     "futbol",    "field",    -12.0856, -77.0268, True,  "Cancha de fútbol 11 en San Borja con césped sintético de alta calidad e iluminación.",       "seguridad,baños,iluminación,vestuarios,parking",             "https://images.unsplash.com/photo-1574629810360-7efbbe195018?w=800", 4.6, 120.0, 48),
@@ -28,6 +44,30 @@ PRODUCTS = [
     ("Camiseta Dry-Fit",            "Tela técnica que evapora el sudor. Corte deportivo.",                                    69.90, "https://images.unsplash.com/photo-1556906781-9a412961c28c?w=800",  "ropa",         "S,M,L,XL",          70, False,  0),
     ("Smartband Fitness",           "Pulsera con monitor cardíaco, pasos y notificaciones.",                                 199.00, "https://images.unsplash.com/photo-1575311373937-040b8e1fd5b6?w=800",  "accesorios",   "Único",             35, False,  0),
 ]
+
+
+ADS = [
+    # image_url, badge_text, title, subtitle, price, link_type, link_target, sort_order
+    ("https://images.unsplash.com/photo-1571019614242-c5c5dee9f50b?w=800", "SPORT",
+     "Vamos, Papá!", "Únete a la comunidad", 129.90, "none", None, 1),
+    ("https://images.unsplash.com/photo-1534438327276-14e5300c3a48?w=800", "Beneficios Premium",
+     "Activar Entrenamiento Inteligente ♥", "Plan personalizado para mejorar tu rendimiento", None, "premium", None, 2),
+    ("https://images.unsplash.com/photo-1476480862126-209bfaa8edc8?w=800", "Nuevo",
+     "Stay Fit Plan", "Reach your weight goal faster", None, "none", None, 3),
+]
+
+
+async def seed_ads(conn):
+    """Crea los anuncios iniciales de 'Recomendados para ti' si la tabla está vacía."""
+    count = await conn.fetchval("SELECT COUNT(*) FROM ads")
+    if count == 0:
+        for a in ADS:
+            await conn.execute(
+                """INSERT INTO ads
+                   (image_url, badge_text, title, subtitle, price, link_type, link_target, sort_order, created_at, updated_at)
+                   VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$9)""",
+                *a, NOW
+            )
 
 
 async def seed_places_and_products(conn):

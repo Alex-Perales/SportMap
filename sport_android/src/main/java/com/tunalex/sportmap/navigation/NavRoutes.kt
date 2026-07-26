@@ -3,6 +3,7 @@ package com.tunalex.sportmap.navigation
 object NavRoutes {
     const val LOGIN = "login"
     const val SIGNUP = "signup"
+    const val FORGOT_PASSWORD = "forgot_password"
     const val DASHBOARD = "dashboard"
     const val MAP = "map"
     const val PLACE_DETAIL = "place_detail"
@@ -24,6 +25,8 @@ object NavRoutes {
     const val HELP_FAQ = "help_faq"
     const val ABOUT = "about"
     const val RESERVATION_HISTORY = "reservation_history"
+    const val FAVORITES = "favorites"
+    const val ORDERS_HISTORY = "orders_history"
 
     const val ROUTE = "route"
     const val ROUTE_PLACE_ARG = "placeId"

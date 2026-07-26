@@ -1,5 +1,6 @@
 package com.tunalex.sportmap.ui.dashboard
 
+import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.expandVertically
 import androidx.compose.animation.fadeIn
@@ -119,6 +120,21 @@ fun DashboardScreen(
         fabExpanded = false
     }
 
+    val notificationPermissionLauncher = rememberLauncherForActivityResult(
+        androidx.activity.result.contract.ActivityResultContracts.RequestPermission()
+    ) { /* si la rechaza, simplemente no recibirá push en la bandeja del sistema */ }
+    val context = androidx.compose.ui.platform.LocalContext.current
+    LaunchedEffect(Unit) {
+        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.TIRAMISU) {
+            val granted = androidx.core.content.ContextCompat.checkSelfPermission(
+                context, android.Manifest.permission.POST_NOTIFICATIONS
+            ) == android.content.pm.PackageManager.PERMISSION_GRANTED
+            if (!granted) {
+                notificationPermissionLauncher.launch(android.Manifest.permission.POST_NOTIFICATIONS)
+            }
+        }
+    }
+
     Box(modifier = Modifier.fillMaxSize()) {
         Scaffold(
             floatingActionButton = {
@@ -156,12 +172,12 @@ fun DashboardScreen(
                     enter = expandVertically() + fadeIn(),
                     exit = shrinkVertically() + fadeOut()
                 ) {
-                    ProChartsBlock()
+                    ProChartsBlock(state = state, onStartActivity = onStartActivity)
                 }
                 Spacer(Modifier.height(20.dp))
-                DataSummarySection()
+                DataSummarySection(state = state)
                 Spacer(Modifier.height(20.dp))
-                RecommendedSection(onOpenPremium)
+                RecommendedSection(ads = state.ads, onOpenPremium = onOpenPremium)
                 Spacer(Modifier.height(96.dp))
             }
         }
@@ -346,48 +362,112 @@ private fun EresProBanner(isPremium: Boolean, expanded: Boolean, onToggle: () ->
 
 // ── Pro Charts Block ──────────────────────────────────────────────────────────
 
+private val WEEKDAY_LABELS = listOf("Lun", "Mar", "Mié", "Jue", "Vie", "Sáb", "Dom")
+
+/** `dow` en SQLite `strftime('%w', ...)` es 0=domingo..6=sábado. Reordenamos a Lun..Dom. */
+private fun buildWeeklyChartData(pattern: List<com.tunalex.sportmap.data.local.dao.DayOfWeekCount>): List<Triple<String, Float, Int>> {
+    val countsBySqliteDow = IntArray(7)
+    pattern.forEach { if (it.dow in 0..6) countsBySqliteDow[it.dow] = it.count }
+    val mondayFirstSqliteDow = listOf(1, 2, 3, 4, 5, 6, 0)
+    val maxCount = mondayFirstSqliteDow.maxOf { countsBySqliteDow[it] }.takeIf { it > 0 } ?: 1
+    return mondayFirstSqliteDow.mapIndexed { i, dow ->
+        val count = countsBySqliteDow[dow]
+        Triple(WEEKDAY_LABELS[i], count.toFloat() / maxCount, count)
+    }
+}
+
+private val HOUR_BUCKETS = listOf(6, 8, 10, 12, 14, 16, 18, 20, 22)
+
+/** Agrupa las reservas por hora en 9 franjas de 2 horas (6h, 8h, ... 22h),
+ * igual que el diseño original, pero con conteos reales del usuario. */
+private fun buildHourlyChartData(pattern: List<com.tunalex.sportmap.data.local.dao.HourCount>): List<Pair<String, Float>> {
+    val countsByHour = IntArray(24)
+    pattern.forEach { if (it.hour in 0..23) countsByHour[it.hour] = it.count }
+    val bucketCounts = HOUR_BUCKETS.map { h -> countsByHour[h] + countsByHour.getOrElse(h + 1) { 0 } }
+    val maxCount = bucketCounts.maxOrNull()?.takeIf { it > 0 } ?: 1
+    return HOUR_BUCKETS.mapIndexed { i, h -> "${h}h" to bucketCounts[i].toFloat() / maxCount }
+}
+
 @Composable
-private fun ProChartsBlock() {
-    val weeklyData = remember {
-        listOf(
-            Triple("Lun", 0.42f, 14),
-            Triple("Mar", 0.58f, 10),
-            Triple("Mié", 0.71f, 7),
-            Triple("Jue", 0.63f, 9),
-            Triple("Vie", 0.89f, 3),
-            Triple("Sáb", 0.96f, 1),
-            Triple("Dom", 0.74f, 6)
-        )
-    }
-    val hourlyData = remember {
-        listOf(
-            "6h" to 0.18f, "8h" to 0.42f, "10h" to 0.65f,
-            "12h" to 0.78f, "14h" to 0.70f, "16h" to 0.85f,
-            "18h" to 0.94f, "20h" to 0.72f, "22h" to 0.30f
-        )
-    }
+private fun ProChartsBlock(state: DashboardUiState, onStartActivity: () -> Unit) {
     Column(modifier = Modifier.padding(horizontal = 16.dp)) {
         Spacer(Modifier.height(12.dp))
-        SportActivityDonutChart()
-        Spacer(Modifier.height(14.dp))
-        WeeklyUsageChart(weeklyData)
-        Spacer(Modifier.height(14.dp))
-        HourlyActivityChart(hourlyData)
+        if (!state.hasAnyReservation) {
+            EmptyStatsCard(onStartActivity)
+        } else {
+            val weeklyData = remember(state.weeklyPattern) { buildWeeklyChartData(state.weeklyPattern) }
+            val hourlyData = remember(state.hourlyPattern) { buildHourlyChartData(state.hourlyPattern) }
+            SportActivityDonutChart(state.sportBreakdown)
+            Spacer(Modifier.height(14.dp))
+            WeeklyUsageChart(weeklyData)
+            Spacer(Modifier.height(14.dp))
+            HourlyActivityChart(hourlyData)
+        }
         Spacer(Modifier.height(8.dp))
+    }
+}
+
+/** Estado vacío para usuarios sin reservas todavía: en vez de gráficos en
+ * cero o inventados, invita a hacer la primera reserva para desbloquearlos. */
+@Composable
+private fun EmptyStatsCard(onStartActivity: () -> Unit) {
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(20.dp),
+        elevation = CardDefaults.cardElevation(defaultElevation = 3.dp)
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 20.dp, vertical = 24.dp),
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+            Box(
+                modifier = Modifier
+                    .size(56.dp)
+                    .clip(RoundedCornerShape(16.dp))
+                    .background(BlueVibrant.copy(alpha = 0.15f)),
+                contentAlignment = Alignment.Center
+            ) {
+                Icon(Icons.Filled.BarChart, null, tint = BlueVibrant, modifier = Modifier.size(28.dp))
+            }
+            Spacer(Modifier.height(14.dp))
+            Text(
+                "Haz tu primera reserva y aquí vas a ver tus estadísticas",
+                fontWeight = FontWeight.Bold,
+                fontSize = 15.sp,
+                textAlign = androidx.compose.ui.text.style.TextAlign.Center
+            )
+            Spacer(Modifier.height(4.dp))
+            Text(
+                "Tu deporte favorito, tus horarios y tu racha van a aparecer solos, apenas empieces.",
+                fontSize = 12.sp,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                textAlign = androidx.compose.ui.text.style.TextAlign.Center
+            )
+            Spacer(Modifier.height(16.dp))
+            androidx.compose.material3.Button(
+                onClick = onStartActivity,
+                shape = RoundedCornerShape(24.dp),
+                colors = androidx.compose.material3.ButtonDefaults.buttonColors(containerColor = BlueVibrant)
+            ) {
+                Text("Buscar una cancha", fontWeight = FontWeight.SemiBold)
+            }
+        }
     }
 }
 
 // ── Sport Activity Donut Chart ────────────────────────────────────────────────
 
+private val SPORT_CHART_COLORS = listOf(BlueVibrant, GoldPremium, GreenSafe, OrangeAlert, RedDanger, IndigoDeep)
+
 @Composable
-private fun SportActivityDonutChart() {
-    val sportData = remember {
-        listOf(
-            Triple("Fútbol", 18f, BlueVibrant),
-            Triple("Running", 12f, GoldPremium),
-            Triple("Tenis", 10f, GreenSafe),
-            Triple("Ciclismo", 5f, OrangeAlert)
-        )
+private fun SportActivityDonutChart(sportBreakdown: List<com.tunalex.sportmap.data.local.dao.SportCount>) {
+    val sportData = remember(sportBreakdown) {
+        sportBreakdown.mapIndexed { index, sc ->
+            val label = com.tunalex.sportmap.ui.map.ALL_SPORTS.find { it.key == sc.sportType }?.label ?: sc.sportType
+            Triple(label, sc.count.toFloat(), SPORT_CHART_COLORS[index % SPORT_CHART_COLORS.size])
+        }
     }
     val total = sportData.sumOf { it.second.toDouble() }.toFloat()
 
@@ -492,8 +572,8 @@ private fun WeeklyUsageChart(data: List<Triple<String, Float, Int>>) {
                 }
                 Spacer(Modifier.width(10.dp))
                 Column {
-                    Text("Afluencia Semanal", fontWeight = FontWeight.Bold, fontSize = 15.sp)
-                    Text("Uso de canchas esta semana", fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    Text("Tu actividad semanal", fontWeight = FontWeight.Bold, fontSize = 15.sp)
+                    Text("Tus reservas por día, esta semana", fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
                 }
             }
             Spacer(Modifier.height(16.dp))
@@ -579,9 +659,9 @@ private fun WeeklyUsageChart(data: List<Triple<String, Float, Int>>) {
 
             Spacer(Modifier.height(10.dp))
             Row(horizontalArrangement = Arrangement.spacedBy(14.dp)) {
-                ChartLegendDot(BlueVibrant, "% Uso")
-                ChartLegendDot(GreenSafe, "Canchas libres", round = true)
-                ChartLegendDot(GoldPremium, "Día pico")
+                ChartLegendDot(BlueVibrant, "% de tus reservas")
+                ChartLegendDot(GreenSafe, "Tus reservas", round = true)
+                ChartLegendDot(GoldPremium, "Tu día más activo")
             }
         }
     }
@@ -614,8 +694,8 @@ private fun HourlyActivityChart(data: List<Pair<String, Float>>) {
                 }
                 Spacer(Modifier.width(10.dp))
                 Column {
-                    Text("Horas Más Activas", fontWeight = FontWeight.Bold, fontSize = 15.sp)
-                    Text("Afluencia por hora del día", fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    Text("Tus horas más activas", fontWeight = FontWeight.Bold, fontSize = 15.sp)
+                    Text("A qué hora sueles reservar", fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
                 }
             }
             Spacer(Modifier.height(16.dp))
@@ -742,8 +822,12 @@ private fun ChartLegendDot(color: Color, label: String, round: Boolean = false) 
 // ── Data Summary Section ──────────────────────────────────────────────────────
 
 @Composable
-private fun DataSummarySection() {
+private fun DataSummarySection(state: DashboardUiState) {
     var showDetails by remember { mutableStateOf(false) }
+    val favoriteSportLabel = state.favoriteSport?.let { key ->
+        com.tunalex.sportmap.ui.map.ALL_SPORTS.find { it.key == key }?.label ?: key
+    }
+    val visitsPerDay = state.sessionsThisWeek / 7.0
 
     Card(
         modifier = Modifier
@@ -768,21 +852,31 @@ private fun DataSummarySection() {
                 )
             }
             Spacer(Modifier.height(14.dp))
-            DataSummaryRow(text = "El recuento de visitas diario medio de los últimos 7 días es 4.8 visitas")
-            Spacer(Modifier.height(10.dp))
-            DataSummaryRow(text = "Promedio de km por sesión en últimos 7 días: 2.3 km")
-            Spacer(Modifier.height(10.dp))
-            DataSummaryRow(text = "Horas de actividad diaria promedio en últimos 7 días: 1.5h")
+            if (!state.hasAnyReservation) {
+                DataSummaryRow(text = "Todavía no tienes reservas. En cuanto hagas la primera, aquí vas a ver tu progreso.")
+            } else {
+                DataSummaryRow(text = "Promedio de reservas por día esta semana: ${"%.1f".format(visitsPerDay)}")
+                Spacer(Modifier.height(10.dp))
+                DataSummaryRow(text = "Racha actual: ${state.currentStreakDays} día(s) seguidos")
+                if (favoriteSportLabel != null) {
+                    Spacer(Modifier.height(10.dp))
+                    DataSummaryRow(text = "Tu deporte favorito es $favoriteSportLabel")
+                }
+                if (state.totalKm <= 0.0) {
+                    Spacer(Modifier.height(10.dp))
+                    DataSummaryRow(text = "Aún no registras rutas de running/ciclismo — termina una ruta desde el mapa para ver tu distancia acá.")
+                }
+            }
         }
     }
 
     if (showDetails) {
-        DataDetailsDialog(onDismiss = { showDetails = false })
+        DataDetailsDialog(state = state, favoriteSportLabel = favoriteSportLabel, onDismiss = { showDetails = false })
     }
 }
 
 @Composable
-private fun DataDetailsDialog(onDismiss: () -> Unit) {
+private fun DataDetailsDialog(state: DashboardUiState, favoriteSportLabel: String?, onDismiss: () -> Unit) {
     Dialog(onDismissRequest = onDismiss) {
         Card(
             shape = RoundedCornerShape(24.dp),
@@ -801,29 +895,28 @@ private fun DataDetailsDialog(onDismiss: () -> Unit) {
                     }
                 }
                 Text(
-                    "Últimos 7 días",
+                    "Basado en tus reservas",
                     fontSize = 12.sp,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     modifier = Modifier.padding(top = 2.dp, bottom = 16.dp)
                 )
 
-                DetailStatRow(label = "Visitas diarias (promedio)", value = "4.8", unit = "visitas/día", color = GreenSafe)
-                DetailStatRow(label = "Km por sesión (promedio)", value = "2.3", unit = "km", color = OrangeAlert)
-                DetailStatRow(label = "Actividad diaria (promedio)", value = "1.5", unit = "h/día", color = BlueVibrant)
+                if (state.totalKm > 0.0) {
+                    DetailStatRow(label = "Distancia recorrida", value = "%.1f".format(state.totalKm), unit = "km", color = OrangeAlert)
+                    Spacer(Modifier.height(14.dp))
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(1.dp)
+                            .background(MaterialTheme.colorScheme.outlineVariant)
+                    )
+                    Spacer(Modifier.height(14.dp))
+                }
 
-                Spacer(Modifier.height(14.dp))
-                Box(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(1.dp)
-                        .background(MaterialTheme.colorScheme.outlineVariant)
-                )
-                Spacer(Modifier.height(14.dp))
-
-                DetailStatRow(label = "Racha actual", value = "5", unit = "días seguidos", color = GoldPremium)
-                DetailStatRow(label = "Sesiones esta semana", value = "12", unit = "sesiones", color = IndigoDeep)
-                DetailStatRow(label = "Deporte favorito", value = "Fútbol", unit = "", color = BlueVibrant)
-                DetailStatRow(label = "Meta semanal cumplida", value = "80", unit = "%", color = GreenSafe)
+                DetailStatRow(label = "Racha actual", value = "${state.currentStreakDays}", unit = "días seguidos", color = GoldPremium)
+                DetailStatRow(label = "Sesiones esta semana", value = "${state.sessionsThisWeek}", unit = "sesiones", color = IndigoDeep)
+                DetailStatRow(label = "Deporte favorito", value = favoriteSportLabel ?: "—", unit = "", color = BlueVibrant)
+                DetailStatRow(label = "Meta semanal (5 sesiones)", value = "${state.weeklyGoalPercent}", unit = "%", color = GreenSafe)
             }
         }
     }
@@ -861,31 +954,52 @@ private fun DataSummaryRow(text: String) {
 
 // ── Recommended Section ───────────────────────────────────────────────────────
 
+/** Anuncio de reserva: se muestra solo si el administrador no ha creado
+ * ningún anuncio en /admin/ads, para que esta sección nunca esté vacía. */
+private val DEFAULT_AD = com.tunalex.sportmap.data.local.entity.AdEntity(
+    id = -1,
+    imageUrl = "https://images.unsplash.com/photo-1534438327276-14e5300c3a48?w=800",
+    badgeText = "Beneficios Premium",
+    title = "Activar Entrenamiento Inteligente ♥",
+    subtitle = "Plan personalizado para mejorar tu rendimiento",
+    price = null,
+    linkType = "premium",
+    linkTarget = null,
+    sortOrder = 0
+)
+
 @Composable
-private fun RecommendedSection(onOpenPremium: () -> Unit) {
+private fun RecommendedSection(
+    ads: List<com.tunalex.sportmap.data.local.entity.AdEntity>,
+    onOpenPremium: () -> Unit
+) {
+    val effectiveAds = ads.ifEmpty { listOf(DEFAULT_AD) }
     Column(modifier = Modifier.padding(horizontal = 16.dp)) {
         Text("Recomendados para ti", fontWeight = FontWeight.Bold, fontSize = 16.sp)
         Spacer(Modifier.height(12.dp))
-        AdCardChallenge()
-        Spacer(Modifier.height(12.dp))
-        AdCardPremium(onClick = onOpenPremium)
-        Spacer(Modifier.height(12.dp))
-        AdCardStayFit()
+        effectiveAds.forEachIndexed { index, ad ->
+            GenericAdCard(
+                ad = ad,
+                onClick = if (ad.linkType == "premium") onOpenPremium else null
+            )
+            if (index < effectiveAds.lastIndex) Spacer(Modifier.height(12.dp))
+        }
     }
 }
 
 @Composable
-private fun AdCardChallenge() {
+private fun GenericAdCard(ad: com.tunalex.sportmap.data.local.entity.AdEntity, onClick: (() -> Unit)?) {
     Card(
         modifier = Modifier
             .fillMaxWidth()
-            .height(140.dp),
+            .height(140.dp)
+            .let { if (onClick != null) it.clickable { onClick() } else it },
         shape = RoundedCornerShape(20.dp),
         elevation = CardDefaults.cardElevation(defaultElevation = 3.dp)
     ) {
         Box(modifier = Modifier.fillMaxSize()) {
             AsyncImage(
-                model = "https://images.unsplash.com/photo-1571019614242-c5c5dee9f50b?w=800",
+                model = ad.imageUrl,
                 contentDescription = null,
                 modifier = Modifier.fillMaxSize(),
                 contentScale = ContentScale.Crop
@@ -894,149 +1008,53 @@ private fun AdCardChallenge() {
                 modifier = Modifier
                     .fillMaxSize()
                     .background(
-                        Brush.horizontalGradient(
-                            listOf(Color(0xFF4A2800).copy(alpha = 0.92f), Color(0xFF4A2800).copy(alpha = 0.55f), Color.Transparent)
+                        Brush.linearGradient(
+                            listOf(IndigoDeep.copy(alpha = 0.85f), Color(0xFF1A1A2E).copy(alpha = 0.55f))
                         )
                     )
             )
-            Row(
+            Column(
                 modifier = Modifier
                     .fillMaxSize()
-                    .padding(horizontal = 20.dp, vertical = 14.dp),
-                horizontalArrangement = Arrangement.SpaceBetween
+                    .padding(horizontal = 20.dp, vertical = 16.dp),
+                verticalArrangement = Arrangement.SpaceBetween
             ) {
-                Column(verticalArrangement = Arrangement.SpaceBetween, modifier = Modifier.fillMaxHeight()) {
-                    Text("30", color = Color.White, fontSize = 38.sp, fontWeight = FontWeight.ExtraBold, lineHeight = 40.sp)
-                    Column {
-                        Text("Vamos, Papá!", color = Color.White, fontWeight = FontWeight.Bold, fontSize = 13.sp)
-                        Text("Únete a la comunidad", color = Color.White.copy(alpha = 0.75f), fontSize = 11.sp)
-                    }
-                }
-                Column(
-                    verticalArrangement = Arrangement.SpaceBetween,
-                    horizontalAlignment = Alignment.End,
-                    modifier = Modifier.fillMaxHeight()
-                ) {
+                if (!ad.badgeText.isNullOrBlank()) {
                     Card(
                         shape = RoundedCornerShape(8.dp),
                         colors = CardDefaults.cardColors(containerColor = Color.White.copy(alpha = 0.25f))
                     ) {
                         Text(
-                            "SPORT",
+                            ad.badgeText,
                             modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
                             color = Color.White,
-                            fontSize = 9.sp,
+                            fontSize = 10.sp,
                             fontWeight = FontWeight.Bold
                         )
                     }
-                    Text("S/. 129.9", color = Color.White, fontSize = 12.sp, fontWeight = FontWeight.Bold)
+                } else {
+                    Spacer(Modifier.height(1.dp))
                 }
-            }
-        }
-    }
-}
-
-@Composable
-private fun AdCardPremium(onClick: () -> Unit) {
-    Card(
-        modifier = Modifier
-            .fillMaxWidth()
-            .height(140.dp)
-            .clickable { onClick() },
-        shape = RoundedCornerShape(20.dp),
-        elevation = CardDefaults.cardElevation(defaultElevation = 3.dp)
-    ) {
-        Box(modifier = Modifier.fillMaxSize()) {
-            AsyncImage(
-                model = "https://images.unsplash.com/photo-1534438327276-14e5300c3a48?w=800",
-                contentDescription = null,
-                modifier = Modifier.fillMaxSize(),
-                contentScale = ContentScale.Crop
-            )
-            Box(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .background(
-                        Brush.linearGradient(
-                            listOf(GoldPremium.copy(alpha = 0.9f), Color(0xFF3B2400).copy(alpha = 0.75f))
-                        )
-                    )
-            )
-            Column(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(horizontal = 20.dp, vertical = 16.dp),
-                verticalArrangement = Arrangement.SpaceBetween
-            ) {
-                Card(
-                    shape = RoundedCornerShape(8.dp),
-                    colors = CardDefaults.cardColors(containerColor = Color(0xFF3B2400).copy(alpha = 0.3f))
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.Bottom
                 ) {
-                    Text(
-                        "Beneficios Premium",
-                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
-                        color = Color.White,
-                        fontSize = 10.sp,
-                        fontWeight = FontWeight.Bold
-                    )
-                }
-                Column {
-                    Text("Activar Entrenamiento Inteligente ♥", color = Color.White, fontSize = 15.sp, fontWeight = FontWeight.Bold)
-                    Spacer(Modifier.height(3.dp))
-                    Text("Plan personalizado para mejorar tu rendimiento", color = Color.White.copy(alpha = 0.8f), fontSize = 12.sp)
-                }
-            }
-        }
-    }
-}
-
-@Composable
-private fun AdCardStayFit() {
-    Card(
-        modifier = Modifier
-            .fillMaxWidth()
-            .height(140.dp),
-        shape = RoundedCornerShape(20.dp),
-        elevation = CardDefaults.cardElevation(defaultElevation = 3.dp)
-    ) {
-        Box(modifier = Modifier.fillMaxSize()) {
-            AsyncImage(
-                model = "https://images.unsplash.com/photo-1476480862126-209bfaa8edc8?w=800",
-                contentDescription = null,
-                modifier = Modifier.fillMaxSize(),
-                contentScale = ContentScale.Crop
-            )
-            Box(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .background(
-                        Brush.linearGradient(
-                            listOf(IndigoDeep.copy(alpha = 0.88f), Color(0xFF7E57C2).copy(alpha = 0.65f))
+                    Column(modifier = Modifier.weight(1f)) {
+                        Text(ad.title, color = Color.White, fontSize = 15.sp, fontWeight = FontWeight.Bold)
+                        if (!ad.subtitle.isNullOrBlank()) {
+                            Spacer(Modifier.height(3.dp))
+                            Text(ad.subtitle, color = Color.White.copy(alpha = 0.8f), fontSize = 12.sp)
+                        }
+                    }
+                    if (ad.price != null) {
+                        Text(
+                            "S/. ${"%.2f".format(ad.price)}",
+                            color = Color.White,
+                            fontSize = 13.sp,
+                            fontWeight = FontWeight.Bold
                         )
-                    )
-            )
-            Column(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(horizontal = 20.dp, vertical = 16.dp),
-                verticalArrangement = Arrangement.SpaceBetween
-            ) {
-                Card(
-                    shape = RoundedCornerShape(8.dp),
-                    colors = CardDefaults.cardColors(containerColor = BlueVibrant.copy(alpha = 0.6f))
-                ) {
-                    Text(
-                        "Nuevo",
-                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
-                        color = Color.White,
-                        fontSize = 10.sp,
-                        fontWeight = FontWeight.Bold
-                    )
-                }
-                Column {
-                    Text("Stay Fit Plan", color = Color.White, fontSize = 16.sp, fontWeight = FontWeight.Bold)
-                    Spacer(Modifier.height(3.dp))
-                    Text("Reach your weight goal faster", color = Color.White.copy(alpha = 0.8f), fontSize = 12.sp)
+                    }
                 }
             }
         }

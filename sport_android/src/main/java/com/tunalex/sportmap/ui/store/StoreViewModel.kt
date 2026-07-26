@@ -18,7 +18,8 @@ import kotlinx.coroutines.flow.stateIn
 data class StoreUiState(
     val products: List<ProductEntity> = emptyList(),
     val cartCount: Int = 0,
-    val selectedCategory: String = "todos"
+    val selectedCategory: String = "todos",
+    val loading: Boolean = true
 )
 
 @OptIn(ExperimentalCoroutinesApi::class)
@@ -39,8 +40,8 @@ class StoreViewModel(
         },
         _category
     ) { products, cartCount, c ->
-        StoreUiState(products = products, cartCount = cartCount, selectedCategory = c)
-    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), StoreUiState())
+        StoreUiState(products = products, cartCount = cartCount, selectedCategory = c, loading = false)
+    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), StoreUiState(loading = true))
 
     fun selectCategory(cat: String) { _category.value = cat }
 }

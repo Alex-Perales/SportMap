@@ -1,5 +1,6 @@
 package com.tunalex.sportmap.data.remote
 
+import com.tunalex.sportmap.BuildConfig
 import okhttp3.OkHttpClient
 import okhttp3.logging.HttpLoggingInterceptor
 import retrofit2.Retrofit
@@ -8,7 +9,13 @@ import java.util.concurrent.TimeUnit
 
 object RetrofitClient {
 
-    const val BASE_URL = "https://sportmap-production.up.railway.app/"
+    // En debug apunta al backend en Docker local (10.0.2.2 = localhost del
+    // host, visto desde el emulador). En release sigue yendo a producción.
+    // Así no hay que acordarse de revertir esto antes de publicar la app.
+    val BASE_URL = if (BuildConfig.DEBUG)
+        "http://10.0.2.2:8000/"
+    else
+        "https://sportmap-production.up.railway.app/"
 
     private val okHttp: OkHttpClient by lazy {
         val logging = HttpLoggingInterceptor().apply {

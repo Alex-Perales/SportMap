@@ -5,12 +5,15 @@ import androidx.room.Database
 import androidx.room.Room
 import androidx.room.RoomDatabase
 import com.tunalex.sportmap.data.local.dao.ActivityDao
+import com.tunalex.sportmap.data.local.dao.AdDao
 import com.tunalex.sportmap.data.local.dao.BankAccountDao
 import com.tunalex.sportmap.data.local.dao.CartDao
 import com.tunalex.sportmap.data.local.dao.ComplaintDao
 import com.tunalex.sportmap.data.local.dao.DisputeDao
+import com.tunalex.sportmap.data.local.dao.FavoriteDao
 import com.tunalex.sportmap.data.local.dao.MedalDao
 import com.tunalex.sportmap.data.local.dao.NotificationDao
+import com.tunalex.sportmap.data.local.dao.OrderDao
 import com.tunalex.sportmap.data.local.dao.PlaceDao
 import com.tunalex.sportmap.data.local.dao.ProductDao
 import com.tunalex.sportmap.data.local.dao.RatingDao
@@ -20,12 +23,15 @@ import com.tunalex.sportmap.data.local.dao.TransactionDao
 import com.tunalex.sportmap.data.local.dao.UserDao
 import com.tunalex.sportmap.data.local.dao.UserKycDao
 import com.tunalex.sportmap.data.local.entity.ActivityEntity
+import com.tunalex.sportmap.data.local.entity.AdEntity
 import com.tunalex.sportmap.data.local.entity.BankAccountEntity
 import com.tunalex.sportmap.data.local.entity.CartItemEntity
 import com.tunalex.sportmap.data.local.entity.ComplaintEntity
 import com.tunalex.sportmap.data.local.entity.DisputeEntity
+import com.tunalex.sportmap.data.local.entity.FavoriteEntity
 import com.tunalex.sportmap.data.local.entity.MedalEntity
 import com.tunalex.sportmap.data.local.entity.NotificationEntity
+import com.tunalex.sportmap.data.local.entity.OrderEntity
 import com.tunalex.sportmap.data.local.entity.PlaceEntity
 import com.tunalex.sportmap.data.local.entity.ProductEntity
 import com.tunalex.sportmap.data.local.entity.RatingEntity
@@ -51,9 +57,12 @@ import com.tunalex.sportmap.data.local.entity.UserKycEntity
         TransactionEntity::class,
         DisputeEntity::class,
         ComplaintEntity::class,
-        NotificationEntity::class
+        NotificationEntity::class,
+        FavoriteEntity::class,
+        OrderEntity::class,
+        AdEntity::class
     ],
-    version = 7,
+    version = 12,
     exportSchema = false
 )
 abstract class SportMapDatabase : RoomDatabase() {
@@ -73,6 +82,9 @@ abstract class SportMapDatabase : RoomDatabase() {
     abstract fun disputeDao(): DisputeDao
     abstract fun complaintDao(): ComplaintDao
     abstract fun notificationDao(): NotificationDao
+    abstract fun favoriteDao(): FavoriteDao
+    abstract fun orderDao(): OrderDao
+    abstract fun adDao(): AdDao
 
     companion object {
         @Volatile

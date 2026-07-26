@@ -17,6 +17,7 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.Email
+import androidx.compose.material.icons.filled.Help
 import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material3.Button
@@ -66,14 +67,10 @@ fun SignUpScreen(
             .fillMaxSize()
             .background(Brush.verticalGradient(listOf(BlueVibrant, IndigoDeep)))
     ) {
-        IconButton(
-            onClick = onBack,
-            modifier = Modifier
-                .padding(top = 24.dp, start = 8.dp)
-                .align(Alignment.TopStart)
-        ) {
-            Icon(Icons.Filled.ArrowBack, contentDescription = "Atrás", tint = Color.White)
-        }
+        // El botón de volver va DESPUÉS del Column (no antes): un Column con
+        // fillMaxSize + verticalScroll pintado encima le roba el toque a
+        // cualquier elemento debajo de él en la misma región, aunque se vea
+        // bien — por eso la flecha no respondía a los toques.
         Column(
             modifier = Modifier
                 .fillMaxSize()
@@ -134,6 +131,40 @@ fun SignUpScreen(
                 visualTransformation = PasswordVisualTransformation()
             )
 
+            Spacer(Modifier.height(18.dp))
+            Column(modifier = Modifier.fillMaxWidth()) {
+                Text(
+                    "Pregunta de seguridad (para recuperar tu cuenta)",
+                    color = Color.White.copy(alpha = 0.85f),
+                    fontSize = 12.sp
+                )
+                Spacer(Modifier.height(4.dp))
+                androidx.compose.foundation.layout.Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Text(
+                        state.securityQuestion,
+                        color = Color.White,
+                        fontSize = 14.sp,
+                        modifier = Modifier.weight(1f)
+                    )
+                    TextButton(onClick = {
+                        val idx = SECURITY_QUESTIONS.indexOf(state.securityQuestion)
+                        vm.onSecurityQuestion(SECURITY_QUESTIONS[(idx + 1) % SECURITY_QUESTIONS.size])
+                    }) {
+                        Text("Cambiar", color = Color.White)
+                    }
+                }
+            }
+            Spacer(Modifier.height(10.dp))
+            AuthTextField(
+                value = state.securityAnswer,
+                onValueChange = vm::onSecurityAnswer,
+                label = "Tu respuesta",
+                leadingIcon = Icons.Filled.Help
+            )
+
             if (state.error != null) {
                 Spacer(Modifier.height(10.dp))
                 Text(text = state.error!!, color = Color(0xFFFFD0D0), fontSize = 13.sp)
@@ -165,6 +196,15 @@ fun SignUpScreen(
             TextButton(onClick = onBack) {
                 Text("¿Ya tienes cuenta? Inicia sesión", color = Color.White)
             }
+        }
+
+        IconButton(
+            onClick = onBack,
+            modifier = Modifier
+                .padding(top = 24.dp, start = 8.dp)
+                .align(Alignment.TopStart)
+        ) {
+            Icon(Icons.Filled.ArrowBack, contentDescription = "Atrás", tint = Color.White)
         }
     }
 }

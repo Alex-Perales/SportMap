@@ -1,3 +1,4 @@
 <resources>
     <string name="app_name">SportMap</string>
+    <string name="fcm_default_channel_id">sportmap_notifications</string>
 </resources>

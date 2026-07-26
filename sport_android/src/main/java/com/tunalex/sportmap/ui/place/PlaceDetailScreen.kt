@@ -23,6 +23,8 @@ import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.CalendarToday
 import androidx.compose.material.icons.filled.CheckCircle
+import androidx.compose.material.icons.filled.Favorite
+import androidx.compose.material.icons.filled.FavoriteBorder
 import androidx.compose.material.icons.filled.LocationOn
 import androidx.compose.material.icons.filled.Navigation
 import androidx.compose.material.icons.filled.Remove
@@ -48,6 +50,7 @@ import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TimePicker
+import androidx.compose.material3.SelectableDates
 import androidx.compose.material3.rememberDatePickerState
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.material3.rememberTimePickerState
@@ -150,7 +153,21 @@ fun PlaceDetailScreen(
                         .clip(RoundedCornerShape(50))
                         .background(Color.Black.copy(alpha = 0.4f))
                 ) {
-                    Icon(Icons.Filled.ArrowBack, null, tint = Color.White)
+                    Icon(Icons.Filled.ArrowBack, contentDescription = "Volver", tint = Color.White)
+                }
+                IconButton(
+                    onClick = { vm.toggleFavorite() },
+                    modifier = Modifier
+                        .align(Alignment.TopEnd)
+                        .padding(top = 24.dp, end = 12.dp)
+                        .clip(RoundedCornerShape(50))
+                        .background(Color.Black.copy(alpha = 0.4f))
+                ) {
+                    Icon(
+                        if (state.isFavorite) Icons.Filled.Favorite else Icons.Filled.FavoriteBorder,
+                        contentDescription = if (state.isFavorite) "Quitar de favoritos" else "Guardar en favoritos",
+                        tint = if (state.isFavorite) Color(0xFFEF4444) else Color.White
+                    )
                 }
             }
 
@@ -174,7 +191,11 @@ fun PlaceDetailScreen(
                 Spacer(Modifier.height(6.dp))
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Icon(Icons.Filled.Star, null, tint = Color(0xFFFFC107), modifier = Modifier.size(16.dp))
-                    Text(" ${place.rating}", fontSize = 13.sp)
+                    Text(
+                        " ${"%.1f".format(state.averageRating)}" +
+                            if (state.reviews.isNotEmpty()) " (${state.reviews.size})" else "",
+                        fontSize = 13.sp
+                    )
                     Spacer(Modifier.width(12.dp))
                     Icon(Icons.Filled.LocationOn, null, modifier = Modifier.size(16.dp),
                         tint = MaterialTheme.colorScheme.onSurfaceVariant)
@@ -229,7 +250,8 @@ fun PlaceDetailScreen(
                         onPickDate = { vm.setDate(it) },
                         onPickTime = { vm.setTime(it) },
                         onPeople = { vm.setPeople(it) },
-                        onReserve = { vm.reserve() }
+                        onValidate = { vm.validateReservation() == null },
+                        onSubmitPayment = { file -> vm.submitReservationPayment(file) }
                     )
                 } else {
                     Spacer(Modifier.height(20.dp))
@@ -249,10 +271,134 @@ fun PlaceDetailScreen(
                         }
                     }
                 }
+
+                Spacer(Modifier.height(28.dp))
+                ReviewsSection(
+                    state = state,
+                    onSubmitReview = { rating, comment -> vm.submitReview(rating, comment) }
+                )
+
                 Spacer(Modifier.height(40.dp))
             }
         }
     }
+}
+
+@Composable
+private fun ReviewsSection(
+    state: PlaceDetailUiState,
+    onSubmitReview: (rating: Int, comment: String) -> Unit
+) {
+    var showDialog by remember { mutableStateOf(false) }
+
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.SpaceBetween,
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Text("Reseñas", fontWeight = FontWeight.SemiBold, fontSize = 16.sp)
+        TextButton(onClick = { showDialog = true }) {
+            Text(if (state.myReview != null) "Editar mi reseña" else "Escribir reseña")
+        }
+    }
+    Spacer(Modifier.height(8.dp))
+
+    if (state.reviews.isEmpty()) {
+        Text(
+            "Aún no hay reseñas. ¡Sé el primero en calificar este lugar!",
+            fontSize = 13.sp,
+            color = MaterialTheme.colorScheme.onSurfaceVariant
+        )
+    } else {
+        Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+            state.reviews.forEach { rw -> ReviewItem(rw) }
+        }
+    }
+
+    if (showDialog) {
+        ReviewDialog(
+            initialRating = state.myReview?.rating ?: 5,
+            initialComment = state.myReview?.comment ?: "",
+            onDismiss = { showDialog = false },
+            onSubmit = { rating, comment ->
+                onSubmitReview(rating, comment)
+                showDialog = false
+            }
+        )
+    }
+}
+
+@Composable
+private fun ReviewItem(reviewWithUser: com.tunalex.sportmap.data.repository.AppRepository.ReviewWithUser) {
+    val review = reviewWithUser.review
+    Card(
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f))
+    ) {
+        Column(modifier = Modifier.padding(14.dp)) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Text(reviewWithUser.userName, fontWeight = FontWeight.SemiBold, fontSize = 13.sp, modifier = Modifier.weight(1f))
+                Row {
+                    repeat(5) { i ->
+                        Icon(
+                            Icons.Filled.Star,
+                            contentDescription = null,
+                            tint = if (i < review.rating) Color(0xFFFFC107) else MaterialTheme.colorScheme.outlineVariant,
+                            modifier = Modifier.size(14.dp)
+                        )
+                    }
+                }
+            }
+            if (!review.comment.isNullOrBlank()) {
+                Spacer(Modifier.height(6.dp))
+                Text(review.comment, fontSize = 13.sp, lineHeight = 18.sp)
+            }
+        }
+    }
+}
+
+@Composable
+private fun ReviewDialog(
+    initialRating: Int,
+    initialComment: String,
+    onDismiss: () -> Unit,
+    onSubmit: (rating: Int, comment: String) -> Unit
+) {
+    var rating by remember { mutableStateOf(initialRating) }
+    var comment by remember { mutableStateOf(initialComment) }
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text("Tu reseña", fontWeight = FontWeight.Bold) },
+        text = {
+            Column {
+                Row(horizontalArrangement = Arrangement.Center, modifier = Modifier.fillMaxWidth()) {
+                    repeat(5) { i ->
+                        IconButton(onClick = { rating = i + 1 }) {
+                            Icon(
+                                Icons.Filled.Star,
+                                contentDescription = "${i + 1} estrellas",
+                                tint = if (i < rating) Color(0xFFFFC107) else MaterialTheme.colorScheme.outlineVariant
+                            )
+                        }
+                    }
+                }
+                Spacer(Modifier.height(8.dp))
+                androidx.compose.material3.OutlinedTextField(
+                    value = comment,
+                    onValueChange = { comment = it.take(300) },
+                    label = { Text("Comentario (opcional)") },
+                    modifier = Modifier.fillMaxWidth(),
+                    minLines = 3
+                )
+            }
+        },
+        confirmButton = {
+            Button(onClick = { onSubmit(rating, comment) }) { Text("Publicar") }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) { Text("Cancelar") }
+        }
+    )
 }
 
 @Composable
@@ -273,7 +419,8 @@ private fun ReservationForm(
     onPickDate: (Long?) -> Unit,
     onPickTime: (String) -> Unit,
     onPeople: (Int) -> Unit,
-    onReserve: () -> Unit
+    onValidate: () -> Boolean,
+    onSubmitPayment: suspend (java.io.File) -> Result<Unit>
 ) {
     var dateDialog by remember { mutableStateOf(false) }
     var timeDialog by remember { mutableStateOf(false) }
@@ -281,7 +428,9 @@ private fun ReservationForm(
     var showConfirmDialog by remember { mutableStateOf(false) }
 
     val dateText = state.selectedDateMillis?.let {
-        SimpleDateFormat("EEE d MMM yyyy", Locale("es")).format(Date(it))
+        SimpleDateFormat("EEE d MMM yyyy", Locale("es")).apply {
+            timeZone = java.util.TimeZone.getTimeZone("UTC")
+        }.format(Date(it))
     } ?: "Seleccionar fecha"
 
     Row(
@@ -311,9 +460,16 @@ private fun ReservationForm(
         modifier = Modifier.fillMaxWidth(),
         verticalAlignment = Alignment.CenterVertically
     ) {
-        Text("Personas", modifier = Modifier.weight(1f), fontSize = 14.sp)
+        Column(modifier = Modifier.weight(1f)) {
+            Text("Personas", fontSize = 14.sp)
+            Text(
+                "Aforo máximo: 20",
+                fontSize = 11.sp,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+        }
         IconButton(onClick = { onPeople(state.peopleCount - 1) }) {
-            Icon(Icons.Filled.Remove, null)
+            Icon(Icons.Filled.Remove, contentDescription = "Disminuir personas")
         }
         Text(
             state.peopleCount.toString(),
@@ -322,18 +478,14 @@ private fun ReservationForm(
             modifier = Modifier.padding(horizontal = 12.dp)
         )
         IconButton(onClick = { onPeople(state.peopleCount + 1) }) {
-            Icon(Icons.Filled.Add, null)
+            Icon(Icons.Filled.Add, contentDescription = "Aumentar personas")
         }
     }
 
     Spacer(Modifier.height(20.dp))
     Button(
         onClick = {
-            if (state.selectedDateMillis == null) {
-                onReserve() // el VM maneja la validación y muestra snackbar
-            } else {
-                showPaymentSheet = true
-            }
+            if (onValidate()) showConfirmDialog = true
         },
         enabled = !state.reservationDone,
         modifier = Modifier
@@ -343,22 +495,20 @@ private fun ReservationForm(
         colors = ButtonDefaults.buttonColors(containerColor = BlueVibrant)
     ) {
         Text(
-            if (state.reservationDone) "¡Reservado!" else "Reservar",
+            if (state.reservationDone) "Pendiente de confirmación" else "Reservar",
             fontWeight = FontWeight.SemiBold
         )
     }
 
-    // Payment bottom sheet
+    // Payment bottom sheet (único medio de pago: Yape/Plin + comprobante)
     if (showPaymentSheet) {
         val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
         PaymentBottomSheet(
             amount = state.place?.pricePerHour ?: 0.0,
             sheetState = sheetState,
             onDismiss = { showPaymentSheet = false },
-            onPay = {
-                showPaymentSheet = false
-                showConfirmDialog = true
-            }
+            onSubmitProof = onSubmitPayment,
+            onSuccess = { showPaymentSheet = false }
         )
     }
 
@@ -366,7 +516,9 @@ private fun ReservationForm(
     if (showConfirmDialog) {
         val placeName = state.place?.name ?: "este lugar"
         val dateFormatted = state.selectedDateMillis?.let {
-            SimpleDateFormat("d 'de' MMMM", Locale("es")).format(Date(it))
+            SimpleDateFormat("d 'de' MMMM", Locale("es")).apply {
+                timeZone = java.util.TimeZone.getTimeZone("UTC")
+            }.format(Date(it))
         } ?: ""
         AlertDialog(
             onDismissRequest = { showConfirmDialog = false },
@@ -382,7 +534,7 @@ private fun ReservationForm(
                 Button(
                     onClick = {
                         showConfirmDialog = false
-                        onReserve()
+                        showPaymentSheet = true
                     },
                     colors = ButtonDefaults.buttonColors(containerColor = BlueVibrant)
                 ) {
@@ -398,8 +550,25 @@ private fun ReservationForm(
     }
 
     if (dateDialog) {
+        // El DatePicker de Compose trabaja en UTC, así que "hoy" debe calcularse
+        // como medianoche UTC del día calendario local, no medianoche en hora local
+        // (si no, en zonas como Lima -UTC-5- el día de hoy queda bloqueado y las
+        // fechas se corren un día).
+        val todayStart = remember {
+            val local = java.util.Calendar.getInstance()
+            val year = local.get(java.util.Calendar.YEAR)
+            val month = local.get(java.util.Calendar.MONTH)
+            val day = local.get(java.util.Calendar.DAY_OF_MONTH)
+            java.util.Calendar.getInstance(java.util.TimeZone.getTimeZone("UTC")).apply {
+                clear()
+                set(year, month, day, 0, 0, 0)
+            }.timeInMillis
+        }
         val pickerState = rememberDatePickerState(
-            initialSelectedDateMillis = state.selectedDateMillis ?: System.currentTimeMillis()
+            initialSelectedDateMillis = state.selectedDateMillis ?: System.currentTimeMillis(),
+            selectableDates = object : SelectableDates {
+                override fun isSelectableDate(utcTimeMillis: Long) = utcTimeMillis >= todayStart
+            }
         )
         DatePickerDialog(
             onDismissRequest = { dateDialog = false },

@@ -19,6 +19,7 @@ import androidx.compose.material.icons.filled.ChevronRight
 import androidx.compose.material.icons.filled.DarkMode
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.EmojiEvents
+import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.DateRange
 import androidx.compose.material.icons.filled.HelpOutline
 import androidx.compose.material.icons.filled.Info
@@ -26,6 +27,7 @@ import androidx.compose.material.icons.filled.LightMode
 import androidx.compose.material.icons.filled.LocationOn
 import androidx.compose.material.icons.filled.Logout
 import androidx.compose.material.icons.filled.Person
+import androidx.compose.material.icons.filled.Receipt
 import androidx.compose.material.icons.filled.Star
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Card
@@ -70,6 +72,8 @@ fun SettingsScreen(
     onOpenHelp: () -> Unit = {},
     onOpenAbout: () -> Unit = {},
     onOpenReservationHistory: () -> Unit = {},
+    onOpenFavorites: () -> Unit = {},
+    onOpenOrdersHistory: () -> Unit = {},
     vm: SettingsViewModel = viewModel(factory = SportMapViewModels.Factory)
 ) {
     val state by vm.state.collectAsStateWithLifecycle()
@@ -200,10 +204,22 @@ fun SettingsScreen(
                 onClick = onOpenReservationHistory
             )
             SettingClickRow(
+                icon = Icons.Filled.Receipt,
+                title = "Mis pedidos",
+                subtitle = "Estado de tus pagos por Yape/Plin",
+                onClick = onOpenOrdersHistory
+            )
+            SettingClickRow(
                 icon = Icons.Filled.Person,
                 title = "Editar perfil",
                 subtitle = "Nombre, distrito preferido",
                 onClick = onEditProfile
+            )
+            SettingClickRow(
+                icon = Icons.Filled.Favorite,
+                title = "Mis favoritos",
+                subtitle = "Lugares que guardaste",
+                onClick = onOpenFavorites
             )
 
             Spacer(Modifier.height(16.dp))
@@ -242,6 +258,17 @@ fun SettingsScreen(
                 subtitle = "Borra tus datos permanentemente",
                 onClick = { showDeleteDialog = true }
             )
+
+            if (com.tunalex.sportmap.BuildConfig.DEBUG) {
+                Spacer(Modifier.height(16.dp))
+                SectionTitle("Modo desarrollador")
+                SettingClickRow(
+                    icon = Icons.Filled.DateRange,
+                    title = "Generar datos de prueba",
+                    subtitle = "Crea reservas de ejemplo para ver el Inicio con datos",
+                    onClick = { vm.seedTestData() }
+                )
+            }
 
             Spacer(Modifier.height(40.dp))
         }

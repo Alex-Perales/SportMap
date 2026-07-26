@@ -1,7 +1,14 @@
-from fastapi import APIRouter, HTTPException
+import uuid
+from pathlib import Path
+
+from fastapi import APIRouter, File, HTTPException, UploadFile
 from app.database import get_pool
-from app.models import AuthResponse, UserUpdate
+from app.models import AuthResponse, FcmTokenUpdate, UserUpdate
+from app.supabase_storage import BUCKET_PERFILES, is_configured, upload_file
 import time
+
+# Fallback local mientras Supabase no esté configurado (ver app/routers/admin.py).
+_UPLOAD_DIR = Path(__file__).resolve().parent.parent / "uploads" / "perfiles"
 
 router = APIRouter(prefix="/api/users", tags=["users"])
 
@@ -56,6 +63,52 @@ async def update_user(user_id: int, body: UserUpdate):
             profile_image_url=updated["profile_image_url"],
             created_at=updated["created_at"],
         )
+
+
+@router.post("/{user_id}/photo", response_model=AuthResponse)
+async def upload_profile_photo(user_id: int, photo: UploadFile = File(...)):
+    content = await photo.read()
+    if is_configured():
+        url = upload_file(BUCKET_PERFILES, content, photo.filename or "foto.jpg", photo.content_type or "image/jpeg")
+    else:
+        _UPLOAD_DIR.mkdir(parents=True, exist_ok=True)
+        ext = Path(photo.filename or "foto.jpg").suffix.lower() or ".jpg"
+        filename = f"{uuid.uuid4().hex}{ext}"
+        (_UPLOAD_DIR / filename).write_bytes(content)
+        url = f"/uploads/perfiles/{filename}"
+
+    now = int(time.time() * 1000)
+    pool = await get_pool()
+    async with pool.acquire() as conn:
+        row = await conn.fetchrow(
+            """UPDATE users SET profile_image_url = $2, updated_at = $3
+               WHERE id = $1
+               RETURNING id, name, email, district, is_premium, profile_image_url, created_at""",
+            user_id, url, now,
+        )
+        if not row:
+            raise HTTPException(status_code=404, detail="Usuario no encontrado")
+        return AuthResponse(
+            id=row["id"],
+            name=row["name"],
+            email=row["email"],
+            district=row["district"] or "Miraflores",
+            is_premium=row["is_premium"],
+            profile_image_url=row["profile_image_url"],
+            created_at=row["created_at"],
+        )
+
+
+@router.put("/{user_id}/fcm-token")
+async def update_fcm_token(user_id: int, body: FcmTokenUpdate):
+    pool = await get_pool()
+    async with pool.acquire() as conn:
+        result = await conn.execute(
+            "UPDATE users SET fcm_token = $2 WHERE id = $1", user_id, body.token
+        )
+        if result == "UPDATE 0":
+            raise HTTPException(status_code=404, detail="Usuario no encontrado")
+    return {"ok": True}
 
 
 @router.delete("/{user_id}")

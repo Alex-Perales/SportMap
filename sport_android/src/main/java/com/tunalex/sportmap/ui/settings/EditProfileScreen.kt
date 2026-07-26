@@ -47,7 +47,9 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
+import kotlinx.coroutines.launch
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -85,7 +87,9 @@ fun EditProfileScreen(
     var district by remember { mutableStateOf("") }
     var profileImageUri by remember { mutableStateOf<String?>(null) }
     var showAvatarSheet by remember { mutableStateOf(false) }
+    var uploadingPhoto by remember { mutableStateOf(false) }
     val context = LocalContext.current
+    val scope = rememberCoroutineScope()
 
     val galleryLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.OpenDocument()
@@ -96,7 +100,22 @@ fun EditProfileScreen(
                     it, Intent.FLAG_GRANT_READ_URI_PERMISSION
                 )
             } catch (_: SecurityException) { }
+            // Muestra la foto local de inmediato y, en paralelo, la sube a
+            // Supabase para tener una URL real (la URI local solo sirve en
+            // este dispositivo).
             profileImageUri = it.toString()
+            scope.launch {
+                uploadingPhoto = true
+                val file = copyUriToCacheFile(context, it)
+                if (file != null) {
+                    vm.uploadProfilePhoto(file).onSuccess { url ->
+                        if (url.isNotBlank()) profileImageUri = url
+                    }.onFailure {
+                        snackbar.showSnackbar("No se pudo subir la foto. Se guardará solo en este dispositivo.")
+                    }
+                }
+                uploadingPhoto = false
+            }
         }
     }
 
@@ -138,7 +157,7 @@ fun EditProfileScreen(
         topBar = {
             TopAppBar(
                 title = { Text("Editar perfil") },
-                navigationIcon = { IconButton(onClick = onBack) { Icon(Icons.Filled.ArrowBack, null) } }
+                navigationIcon = { IconButton(onClick = onBack) { Icon(Icons.Filled.ArrowBack, contentDescription = "Volver") } }
             )
         },
         snackbarHost = { SnackbarHost(snackbar) }
@@ -161,6 +180,13 @@ fun EditProfileScreen(
                     size = 96,
                     modifier = Modifier.clickable { showAvatarSheet = true }
                 )
+                if (uploadingPhoto) {
+                    androidx.compose.material3.CircularProgressIndicator(
+                        modifier = Modifier.size(96.dp),
+                        color = Color.White,
+                        strokeWidth = 2.dp
+                    )
+                }
                 Box(
                     modifier = Modifier
                         .size(28.dp)
@@ -327,4 +353,13 @@ private fun AvatarPickerSheet(
             }
         }
     }
+}
+
+private fun copyUriToCacheFile(context: android.content.Context, uri: Uri): java.io.File? = try {
+    val input = context.contentResolver.openInputStream(uri) ?: return null
+    val file = java.io.File(context.cacheDir, "avatar_${System.currentTimeMillis()}.jpg")
+    input.use { stream -> file.outputStream().use { out -> stream.copyTo(out) } }
+    file
+} catch (_: Exception) {
+    null
 }

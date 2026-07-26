@@ -13,6 +13,15 @@ service-account*.json
 *-service-account.json
 firebase-adminsdk*.json
 
+# ── Backend Python ────────────────────────────────────────────────────────────
+__pycache__/
+*.pyc
+
+# Archivos subidos en tiempo de ejecución (comprobantes, fotos de perfil,
+# productos, lugares) — son datos de usuarios, no código fuente. El backend
+# crea esta carpeta solo al arrancar si no existe (ver app/routers/orders.py).
+sport_backend/app/uploads/
+
 # ── Android ──────────────────────────────────────────────────────────────────
 *.iml
 .gradle

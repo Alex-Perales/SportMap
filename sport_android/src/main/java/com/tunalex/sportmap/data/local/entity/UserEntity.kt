@@ -12,5 +12,7 @@ data class UserEntity(
     val district: String = "Miraflores",
     val isPremium: Boolean = false,
     val profileImageUrl: String? = null,
+    val securityQuestion: String = "",
+    val securityAnswerHash: String = "",
     val createdAt: Long = System.currentTimeMillis()
 )

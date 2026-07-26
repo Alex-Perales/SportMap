@@ -1,5 +1,6 @@
 package com.tunalex.sportmap.navigation
 
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Icon
 import androidx.compose.material3.NavigationBar
@@ -9,6 +10,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
+import com.tunalex.sportmap.util.OfflineBanner
 import androidx.navigation.NavGraph.Companion.findStartDestination
 import androidx.navigation.NavHostController
 import androidx.navigation.NavType
@@ -17,6 +19,7 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
+import com.tunalex.sportmap.ui.auth.ForgotPasswordScreen
 import com.tunalex.sportmap.ui.auth.LoginScreen
 import com.tunalex.sportmap.ui.auth.SignUpScreen
 import com.tunalex.sportmap.ui.dashboard.DashboardScreen
@@ -29,6 +32,7 @@ import com.tunalex.sportmap.ui.settings.PremiumScreen
 import com.tunalex.sportmap.ui.settings.EditProfileScreen
 import com.tunalex.sportmap.ui.settings.AboutScreen
 import com.tunalex.sportmap.ui.settings.HelpFaqScreen
+import com.tunalex.sportmap.ui.settings.FavoritesScreen
 import com.tunalex.sportmap.ui.settings.ReservationHistoryScreen
 import com.tunalex.sportmap.ui.store.CartScreen
 import com.tunalex.sportmap.ui.store.ProductDetailScreen
@@ -80,10 +84,12 @@ fun SportMapNavGraph(
             }
         }
     ) { innerPadding ->
+        Column(modifier = Modifier.padding(innerPadding)) {
+        OfflineBanner()
         NavHost(
             navController = navController,
             startDestination = startDestination,
-            modifier = Modifier.padding(innerPadding)
+            modifier = Modifier.weight(1f)
         ) {
             composable(NavRoutes.LOGIN) {
                 LoginScreen(
@@ -92,7 +98,14 @@ fun SportMapNavGraph(
                             popUpTo(NavRoutes.LOGIN) { inclusive = true }
                         }
                     },
-                    onGoToSignUp = { navController.navigate(NavRoutes.SIGNUP) }
+                    onGoToSignUp = { navController.navigate(NavRoutes.SIGNUP) },
+                    onForgotPassword = { navController.navigate(NavRoutes.FORGOT_PASSWORD) }
+                )
+            }
+            composable(NavRoutes.FORGOT_PASSWORD) {
+                ForgotPasswordScreen(
+                    onBack = { navController.popBackStack() },
+                    onResetSuccess = { navController.popBackStack() }
                 )
             }
             composable(NavRoutes.SIGNUP) {
@@ -165,11 +178,23 @@ fun SportMapNavGraph(
                     onEditProfile = { navController.navigate(NavRoutes.EDIT_PROFILE) },
                     onOpenHelp = { navController.navigate(NavRoutes.HELP_FAQ) },
                     onOpenAbout = { navController.navigate(NavRoutes.ABOUT) },
-                    onOpenReservationHistory = { navController.navigate(NavRoutes.RESERVATION_HISTORY) }
+                    onOpenReservationHistory = { navController.navigate(NavRoutes.RESERVATION_HISTORY) },
+                    onOpenFavorites = { navController.navigate(NavRoutes.FAVORITES) },
+                    onOpenOrdersHistory = { navController.navigate(NavRoutes.ORDERS_HISTORY) }
                 )
             }
+
             composable(NavRoutes.RESERVATION_HISTORY) {
                 ReservationHistoryScreen(onBack = { navController.popBackStack() })
+            }
+            composable(NavRoutes.ORDERS_HISTORY) {
+                com.tunalex.sportmap.ui.settings.OrdersHistoryScreen(onBack = { navController.popBackStack() })
+            }
+            composable(NavRoutes.FAVORITES) {
+                FavoritesScreen(
+                    onBack = { navController.popBackStack() },
+                    onPlaceClick = { id -> navController.navigate(NavRoutes.placeDetail(id)) }
+                )
             }
             composable(NavRoutes.MEDALS) {
                 MedalsScreen(onBack = { navController.popBackStack() })
@@ -203,6 +228,7 @@ fun SportMapNavGraph(
                     onBack = { navController.popBackStack() }
                 )
             }
+        }
         }
     }
 }

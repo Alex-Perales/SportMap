@@ -72,11 +72,8 @@ fun PremiumScreen(
             amount = 10.90,
             sheetState = sheetState,
             onDismiss = { showPaymentSheet = false },
-            onPay = {
-                showPaymentSheet = false
-                vm.togglePremium()
-                onBack()
-            }
+            onSubmitProof = { file -> vm.submitPremiumPayment(file) },
+            onSuccess = { showPaymentSheet = false }
         )
     }
 
@@ -84,7 +81,7 @@ fun PremiumScreen(
         topBar = {
             TopAppBar(
                 title = { Text("SportMap Pro") },
-                navigationIcon = { IconButton(onClick = onBack) { Icon(Icons.Filled.ArrowBack, null) } }
+                navigationIcon = { IconButton(onClick = onBack) { Icon(Icons.Filled.ArrowBack, contentDescription = "Volver") } }
             )
         }
     ) { padding ->
@@ -179,25 +176,38 @@ fun PremiumScreen(
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
                         Spacer(Modifier.height(20.dp))
-                        Button(
-                            onClick = {
-                                if (isPremium) {
-                                    vm.togglePremium()
-                                } else {
-                                    showPaymentSheet = true
-                                }
-                            },
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .heightIn(min = 50.dp),
-                            shape = RoundedCornerShape(28.dp),
-                            colors = ButtonDefaults.buttonColors(containerColor = GoldPremium)
-                        ) {
-                            Text(
-                                if (isPremium) "Cancelar suscripción" else "Suscribirme",
-                                fontWeight = FontWeight.SemiBold,
-                                color = Color(0xFF3B2400)
-                            )
+                        if (state.hasPendingPremiumOrder && !isPremium) {
+                            Card(
+                                colors = CardDefaults.cardColors(containerColor = GoldPremium.copy(alpha = 0.15f))
+                            ) {
+                                Text(
+                                    "Tu pago está en revisión. Te avisaremos cuando se confirme.",
+                                    modifier = Modifier.padding(14.dp),
+                                    fontSize = 13.sp,
+                                    color = Color(0xFF6B4400)
+                                )
+                            }
+                        } else {
+                            Button(
+                                onClick = {
+                                    if (isPremium) {
+                                        vm.togglePremium()
+                                    } else {
+                                        showPaymentSheet = true
+                                    }
+                                },
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .heightIn(min = 50.dp),
+                                shape = RoundedCornerShape(28.dp),
+                                colors = ButtonDefaults.buttonColors(containerColor = GoldPremium)
+                            ) {
+                                Text(
+                                    if (isPremium) "Cancelar suscripción" else "Suscribirme",
+                                    fontWeight = FontWeight.SemiBold,
+                                    color = Color(0xFF3B2400)
+                                )
+                            }
                         }
                     }
                 }

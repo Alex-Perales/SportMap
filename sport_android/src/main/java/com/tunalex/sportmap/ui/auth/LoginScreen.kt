@@ -59,6 +59,7 @@ import com.tunalex.sportmap.viewmodel.SportMapViewModels
 fun LoginScreen(
     onLoginSuccess: () -> Unit,
     onGoToSignUp: () -> Unit,
+    onForgotPassword: () -> Unit = {},
     vm: AuthViewModel = viewModel(factory = SportMapViewModels.Factory)
 ) {
     val state by vm.state.collectAsStateWithLifecycle()
@@ -172,7 +173,15 @@ fun LoginScreen(
                 }
             }
 
-            Spacer(Modifier.height(16.dp))
+            TextButton(onClick = onForgotPassword) {
+                Text(
+                    text = "¿Olvidaste tu contraseña?",
+                    color = Color.White.copy(alpha = 0.85f),
+                    fontSize = 13.sp
+                )
+            }
+
+            Spacer(Modifier.height(4.dp))
             TextButton(onClick = onGoToSignUp) {
                 Text(
                     text = "¿No tienes cuenta? Regístrate aquí",

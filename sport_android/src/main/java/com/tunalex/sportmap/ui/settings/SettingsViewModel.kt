@@ -23,7 +23,8 @@ data class SettingsUiState(
     val user: UserEntity? = null,
     val medals: List<MedalEntity> = emptyList(),
     val darkMode: Boolean? = null,
-    val gpsEnabled: Boolean = true
+    val gpsEnabled: Boolean = true,
+    val hasPendingPremiumOrder: Boolean = false
 )
 
 @OptIn(ExperimentalCoroutinesApi::class)
@@ -39,9 +40,11 @@ class SettingsViewModel(
             repo.observeUser(id),
             repo.observeMedals(id),
             prefs.darkMode,
-            prefs.gpsEnabled
-        ) { user: UserEntity?, medals: List<MedalEntity>, dark: Boolean?, gps: Boolean ->
-            SettingsUiState(user, medals, dark, gps)
+            prefs.gpsEnabled,
+            repo.observeOrders(id)
+        ) { user: UserEntity?, medals: List<MedalEntity>, dark: Boolean?, gps: Boolean, orders ->
+            val pendingPremium = orders.any { it.orderType == "premium" && it.status == "pendiente" }
+            SettingsUiState(user, medals, dark, gps, pendingPremium)
         }
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), SettingsUiState())
 
@@ -57,6 +60,7 @@ class SettingsViewModel(
                 _events.emit(SettingsEvent.LoggedOut)
             }
         }
+        viewModelScope.launch { repo.syncOrdersFromBackend() }
     }
 
     sealed class SettingsEvent {
@@ -78,6 +82,34 @@ class SettingsViewModel(
         val u = state.value.user ?: return
         viewModelScope.launch { repo.setPremium(u.id, !u.isPremium) }
     }
+
+    /** Solo para el botón de desarrollador (modo debug): genera reservas de
+     * prueba para ver el Dashboard con datos reales sin reservar a mano. */
+    fun seedTestData() {
+        viewModelScope.launch {
+            val id = prefs.currentUserId.first()
+            if (id <= 0L) return@launch
+            repo.seedTestReservations(id)
+            _events.emit(SettingsEvent.Toast("Se generaron reservas de prueba. Revisa el Inicio."))
+        }
+    }
+
+    /** Sube el comprobante de Yape/Plin para la suscripción Premium. La
+     * cuenta se marca como premium recién cuando el admin aprueba el pago. */
+    suspend fun submitPremiumPayment(comprobante: java.io.File): Result<Unit> {
+        val result = repo.createOrder(
+            orderType = "premium",
+            amount = 10.90,
+            referenceId = null,
+            itemsJson = null,
+            comprobante = comprobante
+        )
+        return result.map { }
+    }
+
+    /** Sube la foto elegida en el picker de galería a Supabase (bucket
+     * "perfiles") y devuelve la URL pública para usarla en el formulario. */
+    suspend fun uploadProfilePhoto(file: java.io.File): Result<String> = repo.uploadProfilePhoto(file)
 
     fun updateProfile(name: String, district: String, profileImageUri: String? = null) {
         viewModelScope.launch {

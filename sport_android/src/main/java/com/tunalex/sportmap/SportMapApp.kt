@@ -8,6 +8,7 @@ import com.tunalex.sportmap.data.remote.RetrofitClient
 import com.tunalex.sportmap.data.repository.AppRepository
 import com.tunalex.sportmap.data.repository.AuthRepository
 import com.tunalex.sportmap.data.repository.UserPreferences
+import com.tunalex.sportmap.notifications.ensureDefaultNotificationChannel
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -21,6 +22,7 @@ class SportMapApp : Application() {
     override fun onCreate() {
         super.onCreate()
         container = DefaultAppContainer(this)
+        ensureDefaultNotificationChannel(this)
 
         CoroutineScope(SupervisorJob() + Dispatchers.IO).launch {
             // Cargar lugares desde el backend (actualiza el caché Room)
@@ -37,6 +39,9 @@ class SportMapApp : Application() {
             if (productCount == 0) {
                 container.database.productDao().insertAll(Seed.PRODUCTS)
             }
+
+            // Cargar anuncios de "Recomendados para ti" desde el backend
+            container.appRepository.syncAdsFromBackend()
         }
     }
 }
@@ -69,6 +74,10 @@ class DefaultAppContainer(app: Application) : AppContainer {
         productDao = database.productDao(),
         cartDao = database.cartDao(),
         medalDao = database.medalDao(),
+        reviewDao = database.reviewDao(),
+        favoriteDao = database.favoriteDao(),
+        orderDao = database.orderDao(),
+        adDao = database.adDao(),
         api = api,
         prefs = userPreferences
     )

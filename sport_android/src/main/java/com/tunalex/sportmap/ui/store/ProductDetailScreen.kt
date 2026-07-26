@@ -101,7 +101,7 @@ fun ProductDetailScreen(
                         .clip(RoundedCornerShape(50))
                         .background(Color.Black.copy(alpha = 0.4f))
                 ) {
-                    Icon(Icons.Filled.ArrowBack, null, tint = Color.White)
+                    Icon(Icons.Filled.ArrowBack, contentDescription = "Volver", tint = Color.White)
                 }
                 IconButton(
                     onClick = onCartClick,
@@ -111,7 +111,7 @@ fun ProductDetailScreen(
                         .clip(RoundedCornerShape(50))
                         .background(Color.Black.copy(alpha = 0.4f))
                 ) {
-                    Icon(Icons.Filled.ShoppingCart, null, tint = Color.White)
+                    Icon(Icons.Filled.ShoppingCart, contentDescription = "Ir al carrito", tint = Color.White)
                 }
             }
             Column(modifier = Modifier.padding(20.dp)) {
@@ -154,7 +154,7 @@ fun ProductDetailScreen(
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Text("Cantidad", modifier = Modifier.weight(1f), fontWeight = FontWeight.SemiBold)
                     IconButton(onClick = { vm.setQuantity(state.quantity - 1) }) {
-                        Icon(Icons.Filled.Remove, null)
+                        Icon(Icons.Filled.Remove, contentDescription = "Disminuir cantidad")
                     }
                     Text(
                         state.quantity.toString(),
@@ -163,7 +163,7 @@ fun ProductDetailScreen(
                         modifier = Modifier.padding(horizontal = 12.dp)
                     )
                     IconButton(onClick = { vm.setQuantity(state.quantity + 1) }) {
-                        Icon(Icons.Filled.Add, null)
+                        Icon(Icons.Filled.Add, contentDescription = "Aumentar cantidad")
                     }
                 }
 

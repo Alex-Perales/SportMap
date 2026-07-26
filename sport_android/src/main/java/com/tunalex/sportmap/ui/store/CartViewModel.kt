@@ -16,6 +16,9 @@ import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
+import org.json.JSONArray
+import org.json.JSONObject
+import java.io.File
 
 data class CartUiState(
     val items: List<CartItemEntity> = emptyList(),
@@ -42,13 +45,36 @@ class CartViewModel(
         viewModelScope.launch { repo.removeFromCart(id) }
     }
 
-    fun checkout() {
-        viewModelScope.launch {
-            val userId = prefs.currentUserId.first()
-            if (userId > 0) {
-                repo.clearCart(userId)
-                _events.emit("¡Compra realizada! Recibirás un correo de confirmación.")
+    /** Sube el comprobante de Yape/Plin y crea el pedido de la tienda con el
+     * carrito actual. El carrito solo se vacía si el pedido se creó bien. */
+    suspend fun submitCheckoutPayment(comprobante: File): Result<Unit> {
+        val userId = prefs.currentUserId.first()
+        if (userId <= 0) return Result.failure(IllegalStateException("Debes iniciar sesión."))
+
+        val current = state.value
+        if (current.items.isEmpty()) return Result.failure(IllegalStateException("Tu carrito está vacío."))
+
+        val itemsJson = JSONArray().apply {
+            current.items.forEach { item ->
+                put(JSONObject().apply {
+                    put("product_name", item.productName)
+                    put("quantity", item.quantity)
+                    put("unit_price", item.unitPrice)
+                    put("selected_size", item.selectedSize)
+                })
             }
+        }.toString()
+
+        val result = repo.createOrder(
+            orderType = "store",
+            amount = current.total,
+            referenceId = null,
+            itemsJson = itemsJson,
+            comprobante = comprobante
+        )
+        return result.map { }.onSuccess {
+            repo.clearCart(userId)
+            _events.emit("¡Pedido enviado! Confirmaremos tu pago en cuanto lo revisemos.")
         }
     }
 }

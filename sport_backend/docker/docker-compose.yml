@@ -47,6 +47,16 @@ services:
 
     environment:
       DATABASE_URL: postgresql://alex:121416@sportmap-db:5432/sportmap_db
+      FIREBASE_SERVICE_ACCOUNT_PATH: /backend/firebase-adminsdk.json
+      # SUPABASE_URL / SUPABASE_SERVICE_KEY: defínelas en tu entorno o en un
+      # archivo .env local (no se versionan) para habilitar Supabase Storage.
+      SUPABASE_URL: ${SUPABASE_URL:-}
+      SUPABASE_SERVICE_KEY: ${SUPABASE_SERVICE_KEY:-}
+      GMAIL_ADDRESS: ${GMAIL_ADDRESS:-}
+      GMAIL_APP_PASSWORD: ${GMAIL_APP_PASSWORD:-}
+
+    volumes:
+      - ../firebase-adminsdk.json:/backend/firebase-adminsdk.json:ro
 
     depends_on:
       sportmap-db:
