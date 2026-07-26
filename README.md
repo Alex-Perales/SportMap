@@ -7,9 +7,12 @@ Aplicación Android para encontrar canchas, rutas de entrenamiento y espacios de
 ```
 SportMap/
 ├── sport_android/     # App Android (Kotlin + Jetpack Compose)
-├── sport_backend/      # Backend (FastAPI + Postgres) y panel de administración
-└── QR.jpeg              # QR de Yape/Plin usado como único medio de pago
+└── sport_backend/      # Backend (FastAPI + Postgres) y panel de administración
 ```
+
+> El QR de Yape/Plin que se muestra en la app vive en
+> `sport_android/src/main/res/drawable/qr_yape.jpg` — es el único que
+> importa, ya empaquetado como recurso de la app.
 
 ## Stack tecnológico
 
