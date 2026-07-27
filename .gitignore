@@ -22,6 +22,12 @@ __pycache__/
 # crea esta carpeta solo al arrancar si no existe (ver app/routers/orders.py).
 sport_backend/app/uploads/
 
+# ── Landing page (sport_backend/pw_sportmap_src) ──────────────────────────────
+# El código fuente y node_modules no se despliegan; el Dockerfile copia
+# directamente pw_sportmap_src/dist/, que SÍ debe quedar versionado — hay que
+# correr `npm run build` ahí y commitear el dist/ actualizado antes de desplegar.
+sport_backend/pw_sportmap_src/node_modules/
+
 # ── Android ──────────────────────────────────────────────────────────────────
 *.iml
 .gradle

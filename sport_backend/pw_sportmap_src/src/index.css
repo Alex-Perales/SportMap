@@ -1,0 +1,28 @@
+@import "tailwindcss";
+
+@layer utilities {
+  .ui-badge {
+    @apply inline-block px-3.5 py-1 text-sm font-bold uppercase tracking-wider rounded-full;
+  }
+  .ui-title-hero {
+    @apply text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-black tracking-tight leading-[0.95];
+  }
+  .ui-title-section {
+    @apply text-2xl sm:text-3xl lg:text-4xl font-extrabold tracking-tight leading-snug;
+  }
+  .ui-title-sub {
+    @apply text-xl sm:text-2xl font-bold tracking-tight;
+  }
+  .ui-title-card {
+    @apply text-lg sm:text-xl font-bold;
+  }
+  .ui-text-lead {
+    @apply text-base sm:text-lg leading-relaxed;
+  }
+  .ui-text-body {
+    @apply text-base sm:text-base leading-relaxed;
+  }
+  .ui-text-baseall {
+    @apply text-sm sm:text-base;
+  }
+}

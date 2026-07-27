@@ -1,0 +1,6 @@
+{
+  "name": "SportMap",
+  "description": "Landing page oficial de SportMap Peru: descubre canchas deportivas, rutas y tienda de articulos deportivos.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
