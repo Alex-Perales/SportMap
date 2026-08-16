@@ -185,7 +185,7 @@ export const STORE_ITEMS: StoreItem[] = [
     category: 'Calzado',
     sport: 'Fútbol',
     rating: 4.9,
-    image: 'https://images.unsplash.com/photo-1542291026-7eec264c27ff?auto=format&fit=crop&q=80&w=800',
+    image: 'https://images.unsplash.com/photo-1579952363873-27f3bade9f55?auto=format&fit=crop&q=80&w=800',
     inStock: true,
     featured: true
   },
@@ -215,7 +215,7 @@ export const STORE_ITEMS: StoreItem[] = [
     category: 'Calzado',
     sport: 'Tenis',
     rating: 4.9,
-    image: 'https://images.unsplash.com/photo-1584735935682-2f2b69dff9d2?auto=format&fit=crop&q=80&w=800',
+    image: 'https://images.unsplash.com/photo-1542291026-7eec264c27ff?auto=format&fit=crop&q=80&w=800',
     inStock: true,
     featured: true
   },

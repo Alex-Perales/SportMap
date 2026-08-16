@@ -5,84 +5,252 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{% block title %}SportMap Admin{% endblock %}</title>
     <style>
+        :root {
+            --emerald-50: #ecfdf5;
+            --emerald-100: #d1fae5;
+            --emerald-500: #10b981;
+            --emerald-600: #059669;
+            --emerald-700: #047857;
+            --emerald-800: #065f46;
+            --gray-50: #f8fafc;
+            --gray-100: #f1f5f9;
+            --gray-200: #e5e7eb;
+            --gray-300: #d1d5db;
+            --gray-400: #9ca3af;
+            --gray-500: #6b7280;
+            --gray-600: #4b5563;
+            --gray-700: #374151;
+            --gray-900: #111827;
+            --danger: #dc2626;
+            --danger-dark: #b91c1c;
+        }
         * { box-sizing: border-box; }
         body {
-            font-family: -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+            font-family: -apple-system, "Segoe UI", Roboto, Arial, sans-serif;
             margin: 0;
-            background: #f4f6f9;
-            color: #1a1f2b;
+            background: var(--gray-50);
+            color: var(--gray-900);
+            -webkit-font-smoothing: antialiased;
         }
+
+        /* Header */
         header {
-            background: #1e3a8a;
+            background: linear-gradient(135deg, var(--emerald-700), var(--emerald-600));
             color: white;
-            padding: 14px 24px;
+            padding: 14px 28px;
             display: flex;
             align-items: center;
             justify-content: space-between;
+            box-shadow: 0 2px 8px rgba(4,120,87,0.25);
+            position: sticky;
+            top: 0;
+            z-index: 20;
         }
-        header h1 { font-size: 18px; margin: 0; font-weight: 600; }
+        header .brand { display: flex; align-items: center; gap: 10px; }
+        header .brand-badge {
+            width: 32px; height: 32px; border-radius: 9px;
+            background: rgba(255,255,255,0.16);
+            display: flex; align-items: center; justify-content: center;
+            font-size: 16px;
+        }
+        header h1 { font-size: 16px; margin: 0; font-weight: 700; letter-spacing: -0.01em; line-height: 1.2; }
+        header .brand-sub { font-size: 11px; color: var(--emerald-100); font-weight: 500; letter-spacing: .02em; }
+        header nav { display: flex; align-items: center; gap: 4px; }
         header nav a {
-            color: #dbeafe;
+            color: var(--emerald-100);
             text-decoration: none;
-            margin-left: 18px;
-            font-size: 14px;
+            padding: 8px 14px;
+            border-radius: 8px;
+            font-size: 13.5px;
+            font-weight: 600;
+            transition: background .15s, color .15s;
         }
-        header nav a:hover { color: white; }
-        main { max-width: 1000px; margin: 24px auto; padding: 0 16px; }
+        header nav a:hover { color: white; background: rgba(255,255,255,0.12); }
+        header nav a.active { color: white; background: rgba(255,255,255,0.22); }
+        header nav a.logout { margin-left: 8px; color: #fecaca; }
+        header nav a.logout:hover { background: rgba(220,38,38,0.25); color: white; }
+
+        main { max-width: 1040px; margin: 32px auto 64px; padding: 0 20px; }
+
+        .top-row { display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 20px; gap: 16px; flex-wrap: wrap; }
+        .top-row h2 { font-size: 22px; margin: 0 0 4px; font-weight: 800; color: var(--gray-900); letter-spacing: -0.01em; }
+        .top-row .subtitle { font-size: 13.5px; color: var(--gray-500); margin: 0; }
+
         .card {
             background: white;
-            border-radius: 10px;
-            padding: 20px;
-            box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+            border: 1px solid var(--gray-200);
+            border-radius: 14px;
+            padding: 24px;
+            box-shadow: 0 1px 2px rgba(15,23,42,0.04);
             margin-bottom: 20px;
         }
+
+        /* Table */
         table { width: 100%; border-collapse: collapse; }
-        th, td { text-align: left; padding: 10px 8px; border-bottom: 1px solid #eef0f3; font-size: 14px; }
-        th { color: #6b7280; font-weight: 600; font-size: 12px; text-transform: uppercase; }
-        img.thumb { width: 44px; height: 44px; object-fit: cover; border-radius: 6px; }
+        th, td { text-align: left; padding: 12px 10px; border-bottom: 1px solid var(--gray-100); font-size: 14px; }
+        th { color: var(--gray-500); font-weight: 700; font-size: 11px; text-transform: uppercase; letter-spacing: .04em; }
+        tbody tr { transition: background .12s; }
+        tbody tr:hover { background: var(--gray-50); }
+        tbody tr:last-child td { border-bottom: none; }
+        img.thumb { width: 44px; height: 44px; object-fit: cover; border-radius: 8px; border: 1px solid var(--gray-200); background: var(--gray-100); }
+
+        /* Buttons */
         .btn {
-            display: inline-block;
-            background: #2563eb;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            background: var(--emerald-600);
             color: white;
             border: none;
-            padding: 8px 16px;
-            border-radius: 6px;
+            padding: 10px 18px;
+            border-radius: 8px;
             font-size: 14px;
+            font-weight: 600;
             text-decoration: none;
             cursor: pointer;
+            transition: background .15s, transform .1s, box-shadow .15s;
+            box-shadow: 0 1px 2px rgba(5,150,105,0.15);
         }
-        .btn:hover { background: #1d4ed8; }
-        .btn-danger { background: #dc2626; }
-        .btn-danger:hover { background: #b91c1c; }
-        .btn-secondary { background: #6b7280; }
-        .btn-sm { padding: 5px 10px; font-size: 13px; }
+        .btn:hover { background: var(--emerald-700); transform: translateY(-1px); box-shadow: 0 4px 10px rgba(5,150,105,0.25); }
+        .btn:active { transform: translateY(0); }
+        .btn-danger { background: var(--danger); box-shadow: 0 1px 2px rgba(220,38,38,0.15); }
+        .btn-danger:hover { background: var(--danger-dark); box-shadow: 0 4px 10px rgba(220,38,38,0.25); }
+        .btn-secondary { background: white; color: var(--gray-700); border: 1px solid var(--gray-300); box-shadow: none; }
+        .btn-secondary:hover { background: var(--gray-50); border-color: var(--gray-400); transform: none; box-shadow: none; }
+        .btn-sm { padding: 6px 12px; font-size: 13px; }
         .actions { display: flex; gap: 8px; }
-        .top-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; }
         form.inline { display: inline; }
-        label { display: block; font-size: 13px; color: #374151; margin: 12px 0 4px; font-weight: 600; }
-        input[type=text], input[type=number], input[type=url], textarea, select {
+
+        /* Forms */
+        label { display: block; font-size: 13px; color: var(--gray-700); margin: 0 0 6px; font-weight: 600; }
+        label .req { color: var(--emerald-600); margin-left: 2px; }
+        .hint { font-size: 12px; color: var(--gray-400); margin: 6px 0 0; }
+        input[type=text], input[type=number], input[type=url], input[type=email], input[type=password], textarea, select {
             width: 100%;
-            padding: 9px 10px;
-            border: 1px solid #d1d5db;
-            border-radius: 6px;
+            padding: 10px 12px;
+            border: 1.5px solid var(--gray-200);
+            border-radius: 8px;
             font-size: 14px;
             font-family: inherit;
+            background: white;
+            color: var(--gray-900);
+            transition: border-color .15s, box-shadow .15s;
         }
+        input::placeholder, textarea::placeholder { color: var(--gray-400); }
+        input:focus, textarea:focus, select:focus {
+            outline: none;
+            border-color: var(--emerald-500);
+            box-shadow: 0 0 0 3.5px rgba(16,185,129,0.15);
+        }
+        textarea { resize: vertical; min-height: 80px; }
+        select { cursor: pointer; }
+
+        input[type=file] {
+            width: 100%;
+            font-size: 13px;
+            color: var(--gray-500);
+            padding: 10px 12px;
+            border: 1.5px dashed var(--gray-300);
+            border-radius: 8px;
+            background: var(--gray-50);
+        }
+        input[type=file]::file-selector-button {
+            background: var(--emerald-600);
+            color: white;
+            border: none;
+            padding: 7px 14px;
+            border-radius: 6px;
+            font-size: 13px;
+            font-weight: 600;
+            margin-right: 12px;
+            cursor: pointer;
+            transition: background .15s;
+        }
+        input[type=file]::file-selector-button:hover { background: var(--emerald-700); }
+
+        .form-section { margin-bottom: 28px; padding-bottom: 24px; border-bottom: 1px solid var(--gray-100); }
+        .form-section:last-of-type { border-bottom: none; margin-bottom: 8px; padding-bottom: 0; }
+        .form-section-title { font-size: 14.5px; font-weight: 700; color: var(--gray-900); margin: 0 0 2px; display: flex; align-items: center; gap: 8px; }
+        .form-section-title .dot { width: 7px; height: 7px; border-radius: 50%; background: var(--emerald-500); display: inline-block; }
+        .form-section-desc { font-size: 12.5px; color: var(--gray-400); margin: 0 0 16px; }
+
+        .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 18px 20px; }
+        .form-grid .full { grid-column: 1 / -1; }
+        .form-field { margin: 0; }
+        @media (max-width: 640px) {
+            .form-grid { grid-template-columns: 1fr; }
+            header { flex-wrap: wrap; gap: 10px; }
+            header nav { flex-wrap: wrap; }
+        }
+
+        .image-preview-row { display: flex; align-items: center; gap: 14px; margin-bottom: 14px; }
+        .image-preview {
+            width: 76px; height: 76px; border-radius: 10px;
+            border: 1.5px solid var(--gray-200); background: var(--gray-50);
+            object-fit: cover; flex-shrink: 0;
+        }
+        .image-preview-placeholder {
+            width: 76px; height: 76px; border-radius: 10px;
+            border: 1.5px dashed var(--gray-300); background: var(--gray-50);
+            display: flex; align-items: center; justify-content: center;
+            color: var(--gray-400); font-size: 22px; flex-shrink: 0;
+        }
+
+        .toggle-row {
+            display: flex; align-items: center; justify-content: space-between; gap: 12px;
+            background: var(--gray-50); border: 1px solid var(--gray-200);
+            border-radius: 10px; padding: 12px 14px; margin-top: 4px;
+        }
+        .toggle-row .toggle-label { font-size: 13.5px; font-weight: 600; color: var(--gray-700); }
+        .toggle-row .toggle-hint { font-size: 12px; color: var(--gray-400); margin-top: 2px; }
+        .switch { position: relative; display: inline-block; width: 40px; height: 22px; flex-shrink: 0; }
+        .switch input { opacity: 0; width: 0; height: 0; }
+        .switch .slider {
+            position: absolute; cursor: pointer; inset: 0;
+            background: var(--gray-300); border-radius: 999px; transition: background .15s;
+        }
+        .switch .slider::before {
+            content: ""; position: absolute; height: 16px; width: 16px; left: 3px; top: 3px;
+            background: white; border-radius: 50%; transition: transform .15s;
+            box-shadow: 0 1px 2px rgba(0,0,0,0.2);
+        }
+        .switch input:checked + .slider { background: var(--emerald-600); }
+        .switch input:checked + .slider::before { transform: translateX(18px); }
         .checkbox-row { display: flex; align-items: center; gap: 8px; margin-top: 14px; }
-        .checkbox-row input { width: auto; }
-        .flash { background: #dcfce7; color: #166534; padding: 10px 14px; border-radius: 6px; margin-bottom: 16px; font-size: 14px; }
-        .empty { color: #6b7280; text-align: center; padding: 30px 0; }
+        .checkbox-row input { width: auto; accent-color: var(--emerald-600); }
+
+        .input-prefix { position: relative; }
+        .input-prefix span {
+            position: absolute; left: 12px; top: 50%; transform: translateY(-50%);
+            color: var(--gray-400); font-size: 14px; pointer-events: none;
+        }
+        .input-prefix input { padding-left: 32px; }
+
+        .form-actions {
+            display: flex; justify-content: flex-end; align-items: center; gap: 10px;
+            margin-top: 24px; padding-top: 20px; border-top: 1px solid var(--gray-100);
+        }
+
+        .flash { background: var(--emerald-50); color: var(--emerald-800); border: 1px solid var(--emerald-100); padding: 11px 16px; border-radius: 10px; margin-bottom: 18px; font-size: 14px; font-weight: 500; }
+        .error { background: #fef2f2; color: #991b1b; border: 1px solid #fecaca; padding: 11px 16px; border-radius: 10px; margin-top: 16px; font-size: 13.5px; }
+        .empty { color: var(--gray-500); text-align: center; padding: 40px 0; font-size: 14px; }
     </style>
 </head>
 <body>
     <header>
-        <h1>SportMap · Panel de administración</h1>
+        <div class="brand">
+            <div class="brand-badge">🏟️</div>
+            <div>
+                <h1>SportMap</h1>
+                <div class="brand-sub">Panel de administración</div>
+            </div>
+        </div>
         <nav>
-            <a href="/admin/orders">Pedidos</a>
-            <a href="/admin/products">Productos</a>
-            <a href="/admin/places">Lugares</a>
-            <a href="/admin/ads">Anuncios</a>
-            <a href="/admin/logout" onclick="return confirm('¿Seguro que quieres cerrar sesión?');">Cerrar sesión</a>
+            <a href="/admin/orders" class="{{ 'active' if request.url.path.startswith('/admin/orders') else '' }}">Pedidos</a>
+            <a href="/admin/products" class="{{ 'active' if request.url.path.startswith('/admin/products') else '' }}">Productos</a>
+            <a href="/admin/places" class="{{ 'active' if request.url.path.startswith('/admin/places') else '' }}">Lugares</a>
+            <a href="/admin/ads" class="{{ 'active' if request.url.path.startswith('/admin/ads') else '' }}">Anuncios</a>
+            <a href="/admin/logout" class="logout" onclick="return confirm('¿Seguro que quieres cerrar sesión?');">Cerrar sesión</a>
         </nav>
     </header>
     <main>

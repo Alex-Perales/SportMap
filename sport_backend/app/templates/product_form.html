@@ -2,52 +2,144 @@
 {% block title %}{{ "Editar" if product else "Nuevo" }} producto · SportMap Admin{% endblock %}
 {% block content %}
 <div class="top-row">
-    <h2>{{ "Editar producto" if product else "Nuevo producto" }}</h2>
-    <a class="btn btn-secondary" href="/admin/products">Volver</a>
+    <div>
+        <h2>{{ "Editar producto" if product else "Nuevo producto" }}</h2>
+        <p class="subtitle">{{ "Actualiza los datos del producto en el catálogo de la tienda." if product else "Completa los datos para publicarlo en el catálogo de la tienda." }}</p>
+    </div>
+    <a class="btn btn-secondary" href="/admin/products">&larr; Volver</a>
 </div>
 
 <div class="card">
     <form method="post" enctype="multipart/form-data">
-        <label>Nombre *</label>
-        <input type="text" name="name" required value="{{ product.name if product else '' }}">
 
-        <label>Descripción</label>
-        <textarea name="description" rows="3">{{ product.description if product else '' }}</textarea>
+        <div class="form-section">
+            <p class="form-section-title"><span class="dot"></span>Información general</p>
+            <p class="form-section-desc">Nombre y descripción tal como se mostrarán en la app.</p>
 
-        <label>Precio (S/.) *</label>
-        <input type="number" step="0.01" min="0" name="price" required value="{{ product.price if product else '' }}">
+            <div class="form-field" style="margin-bottom: 16px">
+                <label>Nombre<span class="req">*</span></label>
+                <input type="text" name="name" required placeholder="Ej. Camiseta Dry-Fit SportMap" value="{{ product.name if product else '' }}">
+            </div>
 
-        {% if product and product.image_url %}
-        <img class="thumb" src="{{ product.image_url }}" alt="" style="width:80px;height:80px;margin-top:8px">
-        {% endif %}
-        <label>Subir imagen (reemplaza la URL de abajo si eliges un archivo)</label>
-        <input type="file" name="image_file" accept="image/*">
-
-        <label>URL de imagen</label>
-        <input type="url" name="image_url" placeholder="https://images.unsplash.com/..." value="{{ product.image_url if product else '' }}">
-
-        <label>Categoría</label>
-        <select name="category">
-            {% for cat in ["calzado", "balones", "hidratación", "accesorios", "ropa"] %}
-            <option value="{{ cat }}" {% if product and product.category == cat %}selected{% endif %}>{{ cat|capitalize }}</option>
-            {% endfor %}
-        </select>
-
-        <label>Tallas (separadas por coma)</label>
-        <input type="text" name="sizes" placeholder="S,M,L,XL" value="{{ product.sizes if product else '' }}">
-
-        <label>Stock</label>
-        <input type="number" min="0" name="stock" value="{{ product.stock if product else 0 }}">
-
-        <div class="checkbox-row">
-            <input type="checkbox" id="is_on_sale" name="is_on_sale" {% if product and product.is_on_sale %}checked{% endif %}>
-            <label style="margin:0" for="is_on_sale">En oferta</label>
+            <div class="form-field">
+                <label>Descripción</label>
+                <textarea name="description" rows="3" placeholder="Detalles, materiales, recomendaciones de uso...">{{ product.description if product else '' }}</textarea>
+            </div>
         </div>
 
-        <label>Descuento (%)</label>
-        <input type="number" min="0" max="90" name="discount_percent" value="{{ product.discount_percent if product else 0 }}">
+        <div class="form-section">
+            <p class="form-section-title"><span class="dot"></span>Imagen del producto</p>
+            <p class="form-section-desc">Sube un archivo o pega una URL. Si subes un archivo, reemplaza a la URL.</p>
 
-        <button class="btn" type="submit" style="margin-top:20px">{{ "Guardar cambios" if product else "Crear producto" }}</button>
+            <div class="image-preview-row">
+                {% if product and product.image_url %}
+                <img id="img-preview" class="image-preview" src="{{ product.image_url }}" alt="Vista previa">
+                {% else %}
+                <img id="img-preview" class="image-preview" style="display:none" alt="Vista previa">
+                <div id="img-placeholder" class="image-preview-placeholder">🖼️</div>
+                {% endif %}
+                <div style="flex:1">
+                    <label style="margin-bottom:4px">Subir imagen</label>
+                    <input type="file" name="image_file" accept="image/*" id="image_file">
+                </div>
+            </div>
+
+            <label>URL de imagen</label>
+            <input type="text" name="image_url" id="image_url" placeholder="https://images.unsplash.com/..." value="{{ product.image_url if product else '' }}">
+        </div>
+
+        <div class="form-section">
+            <p class="form-section-title"><span class="dot"></span>Precio, categoría y stock</p>
+            <p class="form-section-desc">Define cómo se organiza y cuánto cuesta el producto.</p>
+
+            <div class="form-grid">
+                <div class="form-field">
+                    <label>Precio (S/.)<span class="req">*</span></label>
+                    <div class="input-prefix">
+                        <span>S/.</span>
+                        <input type="number" step="0.01" min="0" name="price" required placeholder="0.00" value="{{ product.price if product else '' }}">
+                    </div>
+                </div>
+
+                <div class="form-field">
+                    <label>Stock disponible</label>
+                    <input type="number" min="0" name="stock" value="{{ product.stock if product else 0 }}">
+                </div>
+
+                <div class="form-field">
+                    <label>Categoría</label>
+                    <select name="category">
+                        {% for cat in ["calzado", "balones", "hidratación", "accesorios", "ropa"] %}
+                        <option value="{{ cat }}" {% if product and product.category == cat %}selected{% endif %}>{{ cat|capitalize }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <div class="form-field">
+                    <label>Tallas disponibles</label>
+                    <input type="text" name="sizes" placeholder="S,M,L,XL" value="{{ product.sizes if product else '' }}">
+                    <p class="hint">Sepáralas con comas.</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="form-section">
+            <p class="form-section-title"><span class="dot"></span>Promoción</p>
+            <p class="form-section-desc">Muestra un descuento destacado en la tienda de la app.</p>
+
+            <label class="toggle-row" for="is_on_sale">
+                <span>
+                    <span class="toggle-label">Producto en oferta</span>
+                    <div class="toggle-hint">Aparecerá con una etiqueta de descuento en la app</div>
+                </span>
+                <span class="switch">
+                    <input type="checkbox" id="is_on_sale" name="is_on_sale" {% if product and product.is_on_sale %}checked{% endif %}>
+                    <span class="slider"></span>
+                </span>
+            </label>
+
+            <div class="form-field" style="margin-top:16px; max-width: 220px">
+                <label>Descuento (%)</label>
+                <input type="number" min="0" max="90" name="discount_percent" value="{{ product.discount_percent if product else 0 }}">
+            </div>
+        </div>
+
+        <div class="form-actions">
+            <a class="btn btn-secondary" href="/admin/products">Cancelar</a>
+            <button class="btn" type="submit">{{ "Guardar cambios" if product else "Crear producto" }}</button>
+        </div>
     </form>
 </div>
+
+<script>
+    (function () {
+        var preview = document.getElementById('img-preview');
+        var placeholder = document.getElementById('img-placeholder');
+        var fileInput = document.getElementById('image_file');
+        var urlInput = document.getElementById('image_url');
+
+        function showPreview(src) {
+            if (!preview) return;
+            preview.src = src;
+            preview.style.display = 'block';
+            if (placeholder) placeholder.style.display = 'none';
+        }
+
+        if (fileInput) {
+            fileInput.addEventListener('change', function () {
+                var file = fileInput.files && fileInput.files[0];
+                if (!file) return;
+                var reader = new FileReader();
+                reader.onload = function (e) { showPreview(e.target.result); };
+                reader.readAsDataURL(file);
+            });
+        }
+        if (urlInput) {
+            urlInput.addEventListener('input', function () {
+                if (fileInput && fileInput.files && fileInput.files[0]) return;
+                if (urlInput.value.trim()) showPreview(urlInput.value.trim());
+            });
+        }
+    })();
+</script>
 {% endblock %}

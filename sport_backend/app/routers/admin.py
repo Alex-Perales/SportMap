@@ -24,16 +24,23 @@ templates = Jinja2Templates(directory=str(Path(__file__).resolve().parent.parent
 _LOCAL_UPLOADS_DIR = Path(__file__).resolve().parent.parent / "uploads"
 
 
-def _save_upload_locally(subfolder: str, content: bytes, filename: str) -> str:
+def _save_upload_locally(request: Request, subfolder: str, content: bytes, filename: str) -> str:
     ext = Path(filename).suffix.lower() or ".jpg"
     dest_dir = _LOCAL_UPLOADS_DIR / subfolder
     dest_dir.mkdir(parents=True, exist_ok=True)
     new_name = f"{uuid.uuid4().hex}{ext}"
     (dest_dir / new_name).write_bytes(content)
-    return f"/uploads/{subfolder}/{new_name}"
+    # URL absoluta (no relativa): la app móvil y el navegador del admin la
+    # necesitan completa (con esquema + host) para poder cargarla. Antes se
+    # guardaba como "/uploads/..." y eso además rompía la validación
+    # type="url" del formulario al reabrir el producto para editarlo.
+    base = str(request.base_url).rstrip("/")
+    return f"{base}/uploads/{subfolder}/{new_name}"
 
 
-async def _handle_image_upload(image_file: Optional[UploadFile], bucket: str, subfolder: str) -> Optional[str]:
+async def _handle_image_upload(
+    request: Request, image_file: Optional[UploadFile], bucket: str, subfolder: str
+) -> Optional[str]:
     """Sube la imagen a Supabase si está configurado; si no, la guarda
     localmente para que la subida nunca falle en silencio. Devuelve None si
     no se adjuntó ningún archivo (para no pisar la URL pegada a mano)."""
@@ -44,7 +51,7 @@ async def _handle_image_upload(image_file: Optional[UploadFile], bucket: str, su
         return None
     if is_configured():
         return upload_file(bucket, content, image_file.filename, image_file.content_type or "image/jpeg")
-    return _save_upload_locally(subfolder, content, image_file.filename)
+    return _save_upload_locally(request, subfolder, content, image_file.filename)
 
 
 def _hash(password: str) -> str:
@@ -133,7 +140,7 @@ async def product_new_submit(
     if not _is_logged_in(request):
         return RedirectResponse("/admin/login", status_code=303)
 
-    uploaded_url = await _handle_image_upload(image_file, BUCKET_PRODUCTOS, "productos")
+    uploaded_url = await _handle_image_upload(request, image_file, BUCKET_PRODUCTOS, "productos")
     final_image_url = uploaded_url or image_url.strip()
 
     now = int(time.time() * 1000)
@@ -179,7 +186,7 @@ async def product_edit_submit(
     if not _is_logged_in(request):
         return RedirectResponse("/admin/login", status_code=303)
 
-    uploaded_url = await _handle_image_upload(image_file, BUCKET_PRODUCTOS, "productos")
+    uploaded_url = await _handle_image_upload(request, image_file, BUCKET_PRODUCTOS, "productos")
     final_image_url = uploaded_url or image_url.strip()
 
     now = int(time.time() * 1000)
@@ -463,7 +470,7 @@ async def place_new_submit(
     if not _is_logged_in(request):
         return RedirectResponse("/admin/login", status_code=303)
 
-    uploaded_url = await _handle_image_upload(photo_file, BUCKET_LUGARES, "lugares")
+    uploaded_url = await _handle_image_upload(request, photo_file, BUCKET_LUGARES, "lugares")
     final_photo_url = uploaded_url or photo_url.strip()
 
     now = int(time.time() * 1000)
@@ -512,7 +519,7 @@ async def place_edit_submit(
     if not _is_logged_in(request):
         return RedirectResponse("/admin/login", status_code=303)
 
-    uploaded_url = await _handle_image_upload(photo_file, BUCKET_LUGARES, "lugares")
+    uploaded_url = await _handle_image_upload(request, photo_file, BUCKET_LUGARES, "lugares")
     final_photo_url = uploaded_url or photo_url.strip()
 
     now = int(time.time() * 1000)
