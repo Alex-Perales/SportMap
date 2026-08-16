@@ -14,6 +14,13 @@ export default defineConfig(() => {
     server: {
       hmr: process.env.DISABLE_HMR !== 'true',
       watch: process.env.DISABLE_HMR === 'true' ? null : {},
+      proxy: {
+        // En producción el backend sirve /admin y el frontend en el mismo
+        // dominio; en dev corren en puertos distintos, así que reenviamos
+        // aquí para que el link "Iniciar Sesión" funcione igual.
+        '/admin': 'http://localhost:8000',
+        '/uploads': 'http://localhost:8000',
+      },
     },
   };
 });

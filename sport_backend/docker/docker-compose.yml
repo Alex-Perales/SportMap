@@ -57,6 +57,9 @@ services:
 
     volumes:
       - ../firebase-adminsdk.json:/backend/firebase-adminsdk.json:ro
+      # Fallback local de imágenes (cuando Supabase no está configurado):
+      # sin este volumen, las fotos subidas se pierden en cada rebuild.
+      - ../app/uploads:/backend/app/uploads
 
     depends_on:
       sportmap-db:
