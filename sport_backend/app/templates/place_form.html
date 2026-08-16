@@ -24,19 +24,26 @@
             <div class="form-grid">
                 <div class="form-field">
                     <label>Tipo de deporte<span class="req">*</span></label>
-                    <select name="sport_type" required>
-                        {% for key, label in [("futbol","Fútbol"), ("voley","Vóley"), ("tenis","Tenis"), ("correr","Correr"), ("natacion","Natación"), ("ciclismo","Ciclismo"), ("bienestar","Bienestar")] %}
+                    {% set sport_keys = ["futbol", "voley", "basquetbol", "tenis", "natacion", "bienestar"] %}
+                    <select name="sport_type" id="sport_type" required>
+                        {% for key, label in [("futbol","Fútbol"), ("voley","Vóley"), ("basquetbol","Básquetbol"), ("tenis","Tenis"), ("natacion","Natación"), ("bienestar","Bienestar")] %}
                         <option value="{{ key }}" {% if place and place.sport_type == key %}selected{% endif %}>{{ label }}</option>
                         {% endfor %}
+                        {% if place and place.sport_type not in sport_keys %}
+                        <option value="{{ place.sport_type }}" selected>{{ place.sport_type }} (heredado, revisar)</option>
+                        {% endif %}
                     </select>
                 </div>
 
                 <div class="form-field">
                     <label>Categoría<span class="req">*</span></label>
-                    <select name="category" required>
-                        {% for key, label in [("field","Cancha (field)"), ("trayecto","Ruta / trayecto"), ("wellness","Zona de bienestar")] %}
+                    <select name="category" id="category" required>
+                        {% for key, label in [("cancha","Cancha"), ("bienestar","Zona de bienestar")] %}
                         <option value="{{ key }}" {% if place and place.category == key %}selected{% endif %}>{{ label }}</option>
                         {% endfor %}
+                        {% if place and place.category not in ["cancha", "bienestar"] %}
+                        <option value="{{ place.category }}" selected>{{ place.category }} (heredado, revisar)</option>
+                        {% endif %}
                     </select>
                 </div>
             </div>
@@ -129,6 +136,21 @@
 </div>
 
 <script>
+    (function () {
+        var sportSelect = document.getElementById('sport_type');
+        var categorySelect = document.getElementById('category');
+        if (!sportSelect || !categorySelect) return;
+
+        function syncCategory() {
+            var target = sportSelect.value === 'bienestar' ? 'bienestar' : 'cancha';
+            if ([].slice.call(categorySelect.options).some(function (o) { return o.value === target; })) {
+                categorySelect.value = target;
+            }
+        }
+        // Solo auto-ajusta al cambiar el deporte (no pisa una categoría heredada al cargar la página).
+        sportSelect.addEventListener('change', syncCategory);
+    })();
+
     (function () {
         var preview = document.getElementById('img-preview');
         var placeholder = document.getElementById('img-placeholder');

@@ -11,7 +11,7 @@ object Seed {
         PlaceEntity(
             id = 1,
             name = "Cancha Fútbol San Borja",
-            sportType = "futbol", category = "field",
+            sportType = "futbol", category = "cancha",
             lat = -12.0856, lng = -77.0268,
             isPrivate = true,
             description = "Cancha de fútbol 11 en San Borja con césped sintético de alta calidad e iluminación.",
@@ -22,7 +22,7 @@ object Seed {
         PlaceEntity(
             id = 2,
             name = "Club Tenis San Borja",
-            sportType = "tenis", category = "field",
+            sportType = "tenis", category = "cancha",
             lat = -12.0945, lng = -77.0315,
             isPrivate = true,
             description = "4 canchas de tenis de polvo de ladrillo. Clases con instructores certificados.",
@@ -33,7 +33,7 @@ object Seed {
         PlaceEntity(
             id = 3,
             name = "Cancha Vóley San Borja",
-            sportType = "voley", category = "field",
+            sportType = "voley", category = "cancha",
             lat = -12.0982, lng = -77.0201,
             isPrivate = true,
             description = "Cancha municipal de vóley con red reglamentaria. Reserva tu hora de 6am a 10pm.",
@@ -45,7 +45,7 @@ object Seed {
         PlaceEntity(
             id = 4,
             name = "Circuito Mágico del Agua",
-            sportType = "bienestar", category = "wellness",
+            sportType = "bienestar", category = "bienestar",
             lat = -12.0712, lng = -77.0102,
             isPrivate = true,
             description = "Parque con fuentes interactivas y senderos. Ideal para caminatas y relajación.",
@@ -90,7 +90,7 @@ object Seed {
         PlaceEntity(
             id = 8,
             name = "Parque Central Miraflores",
-            sportType = "bienestar", category = "wellness",
+            sportType = "bienestar", category = "bienestar",
             lat = -12.1302, lng = -77.0248,
             isPrivate = true,
             description = "Parque céntrico con áreas verdes para yoga, tai chi y meditación al aire libre.",
@@ -101,7 +101,7 @@ object Seed {
         PlaceEntity(
             id = 9,
             name = "Cancha Natación Miraflores",
-            sportType = "natacion", category = "field",
+            sportType = "natacion", category = "cancha",
             lat = -12.1178, lng = -77.0340,
             isPrivate = true,
             description = "Piscina olímpica de 50m con 8 carriles. Programas de natación para todas las edades.",
@@ -113,7 +113,7 @@ object Seed {
         PlaceEntity(
             id = 10,
             name = "Jockey Club",
-            sportType = "tenis", category = "field",
+            sportType = "tenis", category = "cancha",
             lat = -12.0956, lng = -77.0385,
             isPrivate = true,
             description = "8 canchas de tenis de primer nivel (polvo y dura). Sede de torneos ATP challenger.",
@@ -124,7 +124,7 @@ object Seed {
         PlaceEntity(
             id = 11,
             name = "Parque Botánico San Isidro",
-            sportType = "bienestar", category = "wellness",
+            sportType = "bienestar", category = "bienestar",
             lat = -12.0901, lng = -77.0341,
             isPrivate = true,
             description = "Reserva verde de 5 hectáreas. Senderos de meditación y áreas de yoga.",
@@ -135,7 +135,7 @@ object Seed {
         PlaceEntity(
             id = 12,
             name = "Zona Deportiva San Isidro",
-            sportType = "futbol", category = "field",
+            sportType = "futbol", category = "cancha",
             lat = -12.0875, lng = -77.0412,
             isPrivate = true,
             description = "Complejo deportivo con canchas de fútbol 7 y 11. Reserva con anticipación.",
