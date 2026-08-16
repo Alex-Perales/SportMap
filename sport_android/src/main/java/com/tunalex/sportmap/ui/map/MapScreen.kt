@@ -35,6 +35,7 @@ import androidx.compose.material.icons.filled.MyLocation
 import androidx.compose.material.icons.filled.Pool
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.SelfImprovement
+import androidx.compose.material.icons.filled.SportsBasketball
 import androidx.compose.material.icons.filled.SportsSoccer
 import androidx.compose.material.icons.filled.SportsTennis
 import androidx.compose.material.icons.filled.SportsVolleyball
@@ -435,6 +436,7 @@ private fun FilterChip(
 internal fun iconForSport(key: String): ImageVector = when (key) {
     "soccer" -> Icons.Filled.SportsSoccer
     "volley" -> Icons.Filled.SportsVolleyball
+    "basketball" -> Icons.Filled.SportsBasketball
     "tennis" -> Icons.Filled.SportsTennis
     "running" -> Icons.Filled.DirectionsRun
     "swim" -> Icons.Filled.Pool

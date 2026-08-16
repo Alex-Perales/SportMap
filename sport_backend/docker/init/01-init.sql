@@ -346,9 +346,9 @@ ON CONFLICT DO NOTHING;
 -- Insertar lugares
 INSERT INTO places (name, sport_type, category, lat, lng, address, description, services, owner_id, created_at, updated_at)
 VALUES 
-    ('Complejo Deportivo Miraflores', 'futbol', 'field', -12.1181, -77.0302, 'Av. Principal 123', 'Canchas de fútbol', 'seguridad,baños,iluminación', 1, 1686700000000, 1686700000000),
+    ('Complejo Deportivo Miraflores', 'futbol', 'cancha', -12.1181, -77.0302, 'Av. Principal 123', 'Canchas de fútbol', 'seguridad,baños,iluminación', 1, 1686700000000, 1686700000000),
     ('Pista de Running Lima', 'running', 'trayecto', -12.0975, -77.0250, 'Parque Central', 'Ruta para correr 5km', 'seguridad,bebederos', 2, 1686710000000, 1686710000000),
-    ('Piscina Olímpica', 'natacion', 'field', -12.0800, -77.0300, 'Av. Deportes 456', 'Piscina olímpica', 'seguridad,baños,vestuarios', 3, 1686720000000, 1686720000000)
+    ('Piscina Olímpica', 'natacion', 'cancha', -12.0800, -77.0300, 'Av. Deportes 456', 'Piscina olímpica', 'seguridad,baños,vestuarios', 3, 1686720000000, 1686720000000)
 ON CONFLICT DO NOTHING;
 
 -- ===================================

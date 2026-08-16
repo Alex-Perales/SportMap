@@ -31,7 +31,7 @@
                 <td>{{ "Sí" if p.is_private else "No" }}</td>
                 <td class="actions">
                     <a class="btn btn-sm btn-secondary" href="/admin/places/{{ p.id }}/edit">Editar</a>
-                    <form class="inline" method="post" action="/admin/places/{{ p.id }}/delete" onsubmit="return confirm('¿Eliminar {{ p.name }}? Esto también borra sus reseñas y favoritos asociados.');">
+                    <form class="inline delete-form" method="post" action="/admin/places/{{ p.id }}/delete" data-confirm-message="¿Eliminar &quot;{{ p.name }}&quot;? Esto también borra sus reseñas y favoritos asociados.">
                         <button class="btn btn-sm btn-danger" type="submit">Eliminar</button>
                     </form>
                 </td>

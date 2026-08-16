@@ -33,7 +33,7 @@
                 <td>{% if p.is_on_sale %}-{{ p.discount_percent }}%{% else %}—{% endif %}</td>
                 <td class="actions">
                     <a class="btn btn-sm btn-secondary" href="/admin/products/{{ p.id }}/edit">Editar</a>
-                    <form class="inline" method="post" action="/admin/products/{{ p.id }}/delete" onsubmit="return confirm('¿Eliminar {{ p.name }}?');">
+                    <form class="inline delete-form" method="post" action="/admin/products/{{ p.id }}/delete" data-confirm-message="¿Eliminar &quot;{{ p.name }}&quot;? Esta acción no se puede deshacer.">
                         <button class="btn btn-sm btn-danger" type="submit">Eliminar</button>
                     </form>
                 </td>

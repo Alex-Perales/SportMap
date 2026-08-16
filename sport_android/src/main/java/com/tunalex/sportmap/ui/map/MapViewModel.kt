@@ -30,10 +30,9 @@ val ALL_SPORTS = listOf(
     SportFilter("todos", "Todos", "all"),
     SportFilter("futbol", "Fútbol", "soccer"),
     SportFilter("voley", "Vóley", "volley"),
+    SportFilter("basquetbol", "Básquetbol", "basketball"),
     SportFilter("tenis", "Tenis", "tennis"),
-    SportFilter("correr", "Correr", "running"),
     SportFilter("natacion", "Natación", "swim"),
-    SportFilter("ciclismo", "Ciclismo", "bike"),
     SportFilter("bienestar", "Bienestar", "wellness")
 )
 
