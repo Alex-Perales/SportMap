@@ -7,7 +7,7 @@ import androidx.room.PrimaryKey
 data class PlaceEntity(
     @PrimaryKey(autoGenerate = true) val id: Long = 0,
     val name: String,
-    val sportType: String,          // "futbol", "voley", "basquetbol", "tenis", "natacion", "bienestar"
+    val sportType: String,          // "futbol", "voley", "basquetbol", "tenis", "natacion", "ciclismo", "correr", "bienestar"
     val category: String,           // "cancha", "trayecto" (ruta, legado), "bienestar"
     val lat: Double,
     val lng: Double,

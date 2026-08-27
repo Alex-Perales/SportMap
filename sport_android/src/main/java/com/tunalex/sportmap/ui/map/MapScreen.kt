@@ -3,10 +3,17 @@ package com.tunalex.sportmap.ui.map
 import android.Manifest
 import android.annotation.SuppressLint
 import android.content.pm.PackageManager
+import androidx.activity.compose.BackHandler
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.slideInHorizontally
+import androidx.compose.animation.slideOutHorizontally
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -29,7 +36,6 @@ import androidx.compose.material.icons.filled.AllInclusive
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.DirectionsBike
 import androidx.compose.material.icons.filled.DirectionsRun
-import androidx.compose.material.icons.filled.LocationOn
 import androidx.compose.material.icons.filled.Menu
 import androidx.compose.material.icons.filled.MyLocation
 import androidx.compose.material.icons.filled.Pool
@@ -41,28 +47,28 @@ import androidx.compose.material.icons.filled.SportsTennis
 import androidx.compose.material.icons.filled.SportsVolleyball
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.DrawerValue
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.ModalDrawerSheet
-import androidx.compose.material3.ModalNavigationDrawer
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextField
 import androidx.compose.material3.TextFieldDefaults
-import androidx.compose.material3.rememberDrawerState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -83,7 +89,6 @@ import com.tunalex.sportmap.data.local.entity.PlaceEntity
 import com.tunalex.sportmap.ui.theme.BlueVibrant
 import com.tunalex.sportmap.ui.theme.GreenSafe
 import com.tunalex.sportmap.viewmodel.SportMapViewModels
-import kotlinx.coroutines.launch
 
 private val LIMA_CENTER = LatLng(-12.1167, -77.0339)
 
@@ -96,8 +101,7 @@ fun MapScreen(
     val focusedPlace by vm.focusedPlace.collectAsStateWithLifecycle()
     val context = LocalContext.current
     val fusedClient = remember { LocationServices.getFusedLocationProviderClient(context) }
-    val drawerState = rememberDrawerState(initialValue = DrawerValue.Closed)
-    val scope = rememberCoroutineScope()
+    var drawerOpen by remember { mutableStateOf(false) }
 
     val cameraPositionState = rememberCameraPositionState {
         position = CameraPosition.fromLatLngZoom(LIMA_CENTER, 13f)
@@ -138,71 +142,98 @@ fun MapScreen(
         }
     }
 
-    ModalNavigationDrawer(
-        drawerState = drawerState,
-        gesturesEnabled = false,
-        drawerContent = {
-            ModalDrawerSheet(modifier = Modifier.fillMaxWidth(0.55f)) {
+    // Cerrar el panel con el botón "atrás" del sistema cuando está abierto.
+    BackHandler(enabled = drawerOpen) { drawerOpen = false }
+
+    Box(modifier = Modifier.fillMaxSize()) {
+        GoogleMap(
+            modifier = Modifier.fillMaxSize(),
+            cameraPositionState = cameraPositionState
+        ) {
+            state.userLocation?.let { loc ->
+                Marker(
+                    state = rememberMarkerState(position = loc),
+                    title = "Mi ubicación",
+                    icon = BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_AZURE)
+                )
+            }
+
+            state.placesWithDistance.forEach { (place, distKm) ->
+                PlaceMapContent(
+                    place = place,
+                    distanceKm = distKm,
+                    onPlaceClick = onPlaceClick
+                )
+            }
+        }
+
+        Column(modifier = Modifier.fillMaxSize()) {
+            PlaceSearchBar(
+                query = state.searchQuery,
+                suggestions = state.suggestions,
+                onQueryChange = { vm.setSearchQuery(it) },
+                onMenuClick = { drawerOpen = !drawerOpen },
+                onSuggestionClick = { vm.focusPlace(it) }
+            )
+            Box(modifier = Modifier.weight(1f)) {
+                if (state.places.isEmpty()) {
+                    Card(
+                        modifier = Modifier
+                            .align(Alignment.BottomCenter)
+                            .padding(16.dp)
+                    ) {
+                        Text(
+                            text = if (state.searchQuery.isNotBlank())
+                                "Sin resultados para \"${state.searchQuery}\"."
+                            else if (state.nearbyOnly)
+                                "No hay canchas en un radio de 5 km."
+                            else
+                                "No hay lugares para este deporte.",
+                            modifier = Modifier.padding(16.dp)
+                        )
+                    }
+                }
+            }
+        }
+
+        // Fondo semitransparente: tocar el mapa (lado derecho) cierra el panel.
+        AnimatedVisibility(
+            visible = drawerOpen,
+            enter = fadeIn(),
+            exit = fadeOut()
+        ) {
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .background(Color.Black.copy(alpha = 0.4f))
+                    .pointerInput(Unit) {
+                        detectTapGestures { drawerOpen = false }
+                    }
+            )
+        }
+
+        // Panel lateral de deportes: se desliza desde la izquierda al abrir/cerrar.
+        AnimatedVisibility(
+            visible = drawerOpen,
+            enter = slideInHorizontally(initialOffsetX = { -it }),
+            exit = slideOutHorizontally(targetOffsetX = { -it })
+        ) {
+            Surface(
+                modifier = Modifier
+                    .fillMaxHeight()
+                    .fillMaxWidth(0.62f),
+                color = MaterialTheme.colorScheme.surface,
+                tonalElevation = 6.dp,
+                shadowElevation = 8.dp
+            ) {
                 SportFilterDrawer(
                     selected = state.selectedSport,
                     nearbyOnly = state.nearbyOnly,
                     hasLocation = state.userLocation != null,
                     onSelect = { vm.selectSport(it) },
                     onToggleNearby = { vm.toggleNearby() },
-                    onClose = { scope.launch { drawerState.close() } }
+                    onClose = { drawerOpen = false }
                 )
-            }
-        }
-    ) {
-        Box(modifier = Modifier.fillMaxSize()) {
-            GoogleMap(
-                modifier = Modifier.fillMaxSize(),
-                cameraPositionState = cameraPositionState
-            ) {
-                state.userLocation?.let { loc ->
-                    Marker(
-                        state = rememberMarkerState(position = loc),
-                        title = "Mi ubicación",
-                        icon = BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_AZURE)
-                    )
-                }
-
-                state.placesWithDistance.forEach { (place, distKm) ->
-                    PlaceMapContent(
-                        place = place,
-                        distanceKm = distKm,
-                        onPlaceClick = onPlaceClick
-                    )
-                }
-            }
-
-            Column(modifier = Modifier.fillMaxSize()) {
-                PlaceSearchBar(
-                    query = state.searchQuery,
-                    suggestions = state.suggestions,
-                    onQueryChange = { vm.setSearchQuery(it) },
-                    onMenuClick = { scope.launch { drawerState.open() } },
-                    onSuggestionClick = { vm.focusPlace(it) }
-                )
-                Box(modifier = Modifier.weight(1f)) {
-                    if (state.places.isEmpty()) {
-                        Card(
-                            modifier = Modifier
-                                .align(Alignment.BottomCenter)
-                                .padding(16.dp)
-                        ) {
-                            Text(
-                                text = if (state.searchQuery.isNotBlank())
-                                    "Sin resultados para \"${state.searchQuery}\"."
-                                else if (state.nearbyOnly)
-                                    "No hay canchas en un radio de 5 km."
-                                else
-                                    "No hay lugares para este deporte.",
-                                modifier = Modifier.padding(16.dp)
-                            )
-                        }
-                    }
-                }
             }
         }
     }
@@ -222,10 +253,16 @@ private fun PlaceMapContent(
         append(" · ⭐ ${place.rating}")
     }
 
+    val markerSizePx = with(LocalDensity.current) { 44.dp.roundToPx() }
+    val icon = remember(place.sportType, markerSizePx) {
+        sportMarkerIcon(place.sportType, markerSizePx)
+    }
+
     Marker(
         state = markerState,
-        title = place.name,
+        title = "${emojiForSport(place.sportType)} ${place.name}",
         snippet = snippet,
+        icon = icon,
         onClick = { _ -> onPlaceClick(place.id); true }
     )
 }
@@ -325,12 +362,7 @@ private fun SuggestionItem(
             .padding(horizontal = 16.dp, vertical = 12.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
-        Icon(
-            imageVector = Icons.Filled.LocationOn,
-            contentDescription = null,
-            tint = Color.Red,
-            modifier = Modifier.size(20.dp)
-        )
+        Text(text = emojiForSport(place.sportType), fontSize = 18.sp)
         Spacer(Modifier.width(12.dp))
         Column {
             Text(text = place.name, fontSize = 14.sp, fontWeight = FontWeight.Medium, color = Color.Black)
@@ -355,14 +387,13 @@ private fun SportFilterDrawer(
     ) {
         Row(
             modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.Start,
+            horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically
         ) {
-            IconButton(onClick = onClose) {
-                Icon(Icons.Filled.Menu, "Contraer menú")
-            }
-            Spacer(Modifier.width(8.dp))
             Text("Deportes", fontSize = 20.sp, fontWeight = FontWeight.Bold)
+            IconButton(onClick = onClose) {
+                Icon(Icons.Filled.Close, contentDescription = "Cerrar panel")
+            }
         }
         HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
 
@@ -380,7 +411,7 @@ private fun SportFilterDrawer(
 
         ALL_SPORTS.forEach { sport ->
             FilterChip(
-                label = sport.label,
+                label = if (sport.key == "todos") sport.label else "${sport.emoji}  ${sport.label}",
                 icon = iconForSport(sport.iconKey),
                 isSelected = sport.key == selected,
                 activeColor = BlueVibrant,
@@ -438,7 +469,7 @@ internal fun iconForSport(key: String): ImageVector = when (key) {
     "volley" -> Icons.Filled.SportsVolleyball
     "basketball" -> Icons.Filled.SportsBasketball
     "tennis" -> Icons.Filled.SportsTennis
-    "running" -> Icons.Filled.DirectionsRun
+    "running", "run" -> Icons.Filled.DirectionsRun
     "swim" -> Icons.Filled.Pool
     "bike" -> Icons.Filled.DirectionsBike
     "wellness" -> Icons.Filled.SelfImprovement

@@ -70,6 +70,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -336,12 +337,13 @@ private fun OriginSelectionScreen(
                 modifier = Modifier.fillMaxSize(),
                 cameraPositionState = cameraPositionState
             ) {
-                // Destination — RED pin (the sports place)
+                // Destination — pin with the sport emoji (the sports place)
                 state.place?.let { place ->
+                    val sizePx = with(LocalDensity.current) { 44.dp.roundToPx() }
                     Marker(
                         state = rememberMarkerState(position = LatLng(place.lat, place.lng)),
-                        title = place.name,
-                        icon = BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_RED)
+                        title = "${emojiForSport(place.sportType)} ${place.name}",
+                        icon = sportMarkerIcon(place.sportType, sizePx)
                     )
                 }
                 // Picked origin — GREEN pin
@@ -400,12 +402,13 @@ private fun MapPickerScreen(
             cameraPositionState = cameraPositionState,
             onMapClick = onMapClick
         ) {
-            // Destination — RED pin (always visible so user knows where to go)
+            // Destination — pin with the sport emoji (always visible so user knows where to go)
             state.place?.let { place ->
+                val sizePx = with(LocalDensity.current) { 44.dp.roundToPx() }
                 Marker(
                     state = rememberMarkerState(position = LatLng(place.lat, place.lng)),
-                    title = place.name,
-                    icon = BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_RED)
+                    title = "${emojiForSport(place.sportType)} ${place.name}",
+                    icon = sportMarkerIcon(place.sportType, sizePx)
                 )
             }
             // Picked origin — GREEN pin (appears once user taps the map)
@@ -494,12 +497,13 @@ private fun RouteResultScreen(
                     icon = BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_GREEN)
                 )
             }
-            // Destination — RED pin (the sports place)
+            // Destination — pin with the sport emoji (the sports place)
             state.place?.let { place ->
+                val sizePx = with(LocalDensity.current) { 44.dp.roundToPx() }
                 Marker(
                     state = rememberMarkerState(position = LatLng(place.lat, place.lng)),
-                    title = place.name,
-                    icon = BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_RED)
+                    title = "${emojiForSport(place.sportType)} ${place.name}",
+                    icon = sportMarkerIcon(place.sportType, sizePx)
                 )
             }
             // Route polyline

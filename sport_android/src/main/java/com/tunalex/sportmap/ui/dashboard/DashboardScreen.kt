@@ -162,6 +162,8 @@ fun DashboardScreen(
                 Spacer(Modifier.height(20.dp))
                 StatsRow(totalKm = state.totalKm, placesVisited = state.placesVisited)
                 Spacer(Modifier.height(20.dp))
+                RecommendedSection(ads = state.ads, onOpenPremium = onOpenPremium)
+                Spacer(Modifier.height(20.dp))
                 EresProBanner(
                     isPremium = state.user?.isPremium == true,
                     expanded = proExpanded,
@@ -176,8 +178,6 @@ fun DashboardScreen(
                 }
                 Spacer(Modifier.height(20.dp))
                 DataSummarySection(state = state)
-                Spacer(Modifier.height(20.dp))
-                RecommendedSection(ads = state.ads, onOpenPremium = onOpenPremium)
                 Spacer(Modifier.height(96.dp))
             }
         }
