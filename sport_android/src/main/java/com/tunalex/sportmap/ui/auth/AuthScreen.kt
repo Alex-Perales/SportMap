@@ -4,6 +4,7 @@ import androidx.activity.compose.BackHandler
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -20,7 +21,6 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AlternateEmail
-import androidx.compose.material.icons.filled.HelpOutline
 import androidx.compose.material.icons.filled.PersonOutline
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
@@ -31,7 +31,6 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -64,7 +63,6 @@ private val PANEL_RADIUS = 76.dp
 @Composable
 fun AuthScreen(
     onEnterApp: () -> Unit,
-    onForgotPassword: () -> Unit,
     vm: AuthViewModel = viewModel(factory = SportMapViewModels.Factory)
 ) {
     val state by vm.state.collectAsStateWithLifecycle()
@@ -135,7 +133,6 @@ fun AuthScreen(
                     state = state,
                     vm = vm,
                     onToggleMode = ::toggle,
-                    onForgotPassword = onForgotPassword,
                     onShowPolicy = { showPolicy = true }
                 )
 
@@ -152,7 +149,6 @@ private fun AuthCard(
     state: AuthUiState,
     vm: AuthViewModel,
     onToggleMode: (AuthMode) -> Unit,
-    onForgotPassword: () -> Unit,
     onShowPolicy: () -> Unit
 ) {
     val isLogin = mode == AuthMode.LOGIN
@@ -169,19 +165,21 @@ private fun AuthCard(
         Box(modifier = Modifier.fillMaxSize()) {
 
             // ── Formulario ─────────────────────────────────────────────
+            // El padding reservado para el panel es SIEMPRE >= su alto en
+            // reposo, así el contenido nunca queda debajo del panel.
             Box(
                 modifier = Modifier
                     .fillMaxSize()
                     .padding(
-                        top = if (isLogin) PANEL_REST - 18.dp else 22.dp,
-                        bottom = if (isLogin) 22.dp else PANEL_REST - 18.dp,
+                        top = if (isLogin) PANEL_REST + 14.dp else 22.dp,
+                        bottom = if (isLogin) 22.dp else PANEL_REST + 14.dp,
                         start = 22.dp,
                         end = 22.dp
                     )
             ) {
                 Column(modifier = Modifier.verticalScroll(rememberScrollState())) {
                     if (isLogin) {
-                        LoginContent(state, vm, onForgotPassword)
+                        LoginContent(state, vm)
                     } else {
                         RegisterContent(state, vm, onShowPolicy)
                     }
@@ -236,14 +234,10 @@ private fun AuthCard(
 }
 
 @Composable
-private fun LoginContent(
-    state: AuthUiState,
-    vm: AuthViewModel,
-    onForgotPassword: () -> Unit
-) {
+private fun LoginContent(state: AuthUiState, vm: AuthViewModel) {
     Text("Iniciar sesión", fontWeight = FontWeight.ExtraBold, fontSize = 30.sp, color = InkDark)
     Text("Reserva canchas y espacios deportivos cerca de ti", fontSize = 12.sp, color = InkMuted)
-    Spacer(Modifier.height(18.dp))
+    Spacer(Modifier.height(20.dp))
 
     AuthField(
         value = state.email,
@@ -252,24 +246,19 @@ private fun LoginContent(
         trailingIcon = Icons.Filled.PersonOutline,
         keyboardType = KeyboardType.Email
     )
-    Spacer(Modifier.height(12.dp))
+    Spacer(Modifier.height(14.dp))
     AuthPasswordField(
         value = state.password,
         onValueChange = vm::onPassword,
         placeholder = "Contraseña"
     )
 
-    Box(modifier = Modifier.fillMaxWidth(), contentAlignment = Alignment.CenterEnd) {
-        TextButton(onClick = onForgotPassword) {
-            Text("¿Olvidaste tu contraseña?", color = TealDark, fontSize = 12.sp)
-        }
-    }
-
     if (state.error != null) {
+        Spacer(Modifier.height(10.dp))
         Text(state.error!!, color = MaterialTheme.colorScheme.error, fontSize = 12.sp)
-        Spacer(Modifier.height(8.dp))
     }
 
+    Spacer(Modifier.height(18.dp))
     GradientButton(
         text = "Ingresar",
         onClick = { vm.login() },
@@ -284,9 +273,9 @@ private fun RegisterContent(
     vm: AuthViewModel,
     onShowPolicy: () -> Unit
 ) {
-    Text("Crear cuenta", fontWeight = FontWeight.ExtraBold, fontSize = 26.sp, color = InkDark)
+    Text("Crear cuenta", fontWeight = FontWeight.ExtraBold, fontSize = 28.sp, color = InkDark)
     Text("Regístrate para reservar y entrenar", fontSize = 12.sp, color = InkMuted)
-    Spacer(Modifier.height(14.dp))
+    Spacer(Modifier.height(18.dp))
 
     AuthField(
         value = state.name,
@@ -294,7 +283,7 @@ private fun RegisterContent(
         placeholder = "Nombre completo",
         trailingIcon = Icons.Filled.PersonOutline
     )
-    Spacer(Modifier.height(10.dp))
+    Spacer(Modifier.height(12.dp))
     AuthField(
         value = state.email,
         onValueChange = vm::onEmail,
@@ -302,58 +291,55 @@ private fun RegisterContent(
         trailingIcon = Icons.Filled.AlternateEmail,
         keyboardType = KeyboardType.Email
     )
-    Spacer(Modifier.height(10.dp))
+    Spacer(Modifier.height(12.dp))
     AuthPasswordField(
         value = state.password,
         onValueChange = vm::onPassword,
         placeholder = "Contraseña (mín. 6)"
     )
 
-    Spacer(Modifier.height(12.dp))
-    Text("Pregunta de seguridad (para recuperar tu cuenta)", fontSize = 11.sp, color = InkMuted)
-    Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth()) {
-        Text(state.securityQuestion, fontSize = 12.sp, color = InkDark, modifier = Modifier.weight(1f))
-        TextButton(onClick = {
-            val idx = SECURITY_QUESTIONS.indexOf(state.securityQuestion)
-            vm.onSecurityQuestion(SECURITY_QUESTIONS[(idx + 1) % SECURITY_QUESTIONS.size])
-        }) {
-            Text("Cambiar", color = TealDark, fontWeight = FontWeight.SemiBold, fontSize = 12.sp)
-        }
-    }
-    Spacer(Modifier.height(4.dp))
-    AuthField(
-        value = state.securityAnswer,
-        onValueChange = vm::onSecurityAnswer,
-        placeholder = "Tu respuesta",
-        trailingIcon = Icons.Filled.HelpOutline
-    )
+    Spacer(Modifier.height(16.dp))
 
-    Spacer(Modifier.height(8.dp))
-    Row(verticalAlignment = Alignment.CenterVertically) {
+    // ── Aceptación de la política (destacada) ──────────────────────────
+    val policyBorder = if (state.acceptedPolicy) TealDark else Color(0xFFC24A4A)
+    Row(
+        verticalAlignment = Alignment.CenterVertically,
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(14.dp))
+            .background(
+                if (state.acceptedPolicy) TealDark.copy(alpha = 0.10f)
+                else Color(0xFFC24A4A).copy(alpha = 0.10f)
+            )
+            .border(1.5.dp, policyBorder, RoundedCornerShape(14.dp))
+            .clickable { vm.onAcceptPolicy(!state.acceptedPolicy) }
+            .padding(end = 10.dp)
+    ) {
         Checkbox(
             checked = state.acceptedPolicy,
             onCheckedChange = vm::onAcceptPolicy,
-            colors = CheckboxDefaults.colors(checkedColor = TealDark)
+            colors = CheckboxDefaults.colors(
+                checkedColor = TealDark,
+                uncheckedColor = policyBorder
+            )
         )
-        Text("Acepto la ", fontSize = 12.sp, color = InkMuted)
-        Text(
-            "Política de Privacidad",
-            fontSize = 12.sp,
-            fontWeight = FontWeight.Bold,
-            color = TealDark,
-            modifier = Modifier
-                .clip(RoundedCornerShape(4.dp))
-                .clickable { onShowPolicy() }
-                .padding(2.dp)
-        )
+        Column(modifier = Modifier.weight(1f)) {
+            Text("Acepto la Política de Privacidad", fontSize = 13.sp, fontWeight = FontWeight.Bold, color = InkDark)
+            Text(
+                "Obligatorio para crear la cuenta · toca para leerla",
+                fontSize = 10.sp,
+                color = TealDark,
+                modifier = Modifier.clickable { onShowPolicy() }
+            )
+        }
     }
 
     if (state.error != null) {
-        Spacer(Modifier.height(4.dp))
+        Spacer(Modifier.height(8.dp))
         Text(state.error!!, color = MaterialTheme.colorScheme.error, fontSize = 12.sp)
     }
 
-    Spacer(Modifier.height(8.dp))
+    Spacer(Modifier.height(16.dp))
     GradientButton(
         text = "Crear cuenta",
         onClick = { vm.signUp() },

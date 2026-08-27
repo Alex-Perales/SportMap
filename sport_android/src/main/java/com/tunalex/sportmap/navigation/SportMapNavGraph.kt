@@ -22,7 +22,6 @@ import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
 import com.tunalex.sportmap.ui.auth.AuthScreen
-import com.tunalex.sportmap.ui.auth.ForgotPasswordScreen
 import com.tunalex.sportmap.ui.dashboard.DashboardScreen
 import com.tunalex.sportmap.ui.map.MapScreen
 import com.tunalex.sportmap.ui.map.RouteScreen
@@ -107,14 +106,7 @@ fun SportMapNavGraph(
                         navController.navigate(NavRoutes.DASHBOARD) {
                             popUpTo(NavRoutes.LOGIN) { inclusive = true }
                         }
-                    },
-                    onForgotPassword = { navController.navigate(NavRoutes.FORGOT_PASSWORD) }
-                )
-            }
-            composable(NavRoutes.FORGOT_PASSWORD) {
-                ForgotPasswordScreen(
-                    onBack = { navController.popBackStack() },
-                    onResetSuccess = { navController.popBackStack() }
+                    }
                 )
             }
             composable(NavRoutes.DASHBOARD) {
