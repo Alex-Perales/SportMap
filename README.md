@@ -72,6 +72,7 @@ Desde ahí se administran:
 | `SUPABASE_URL` / `SUPABASE_SERVICE_KEY` | Subir fotos (comprobantes, perfiles, productos, lugares) a Supabase Storage | Las fotos se guardan en disco local del servidor en su lugar |
 | `GMAIL_ADDRESS` / `GMAIL_APP_PASSWORD` | Enviar correos de confirmación/rechazo de pago | El envío se omite (se loguea, no rompe el flujo) |
 | `FIREBASE_SERVICE_ACCOUNT_JSON` (o `FIREBASE_SERVICE_ACCOUNT_PATH`) | Notificaciones push al aprobar/rechazar un pedido | El envío se omite |
+| `PUBLIC_BASE_URL` | Host público (esquema + dominio) para las fotos guardadas en disco local cuando Supabase no está configurado. Solo hace falta en despliegues sin Supabase | Se guarda la ruta relativa `/uploads/...` y cada cliente (navegador del panel y app) la resuelve contra su propio backend |
 | `SECRET_KEY` | Firma de sesiones del panel admin | Usa un valor de desarrollo por defecto |
 
 ## Módulos de la app

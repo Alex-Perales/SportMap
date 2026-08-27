@@ -24,7 +24,10 @@ data class SportFilter(
     val key: String,
     val label: String,
     val iconKey: String
-)
+) {
+    /** Emoji del deporte (misma fuente que los marcadores del mapa). */
+    val emoji: String get() = emojiForSport(key)
+}
 
 val ALL_SPORTS = listOf(
     SportFilter("todos", "Todos", "all"),
@@ -33,6 +36,8 @@ val ALL_SPORTS = listOf(
     SportFilter("basquetbol", "Básquetbol", "basketball"),
     SportFilter("tenis", "Tenis", "tennis"),
     SportFilter("natacion", "Natación", "swim"),
+    SportFilter("ciclismo", "Ciclismo", "bike"),
+    SportFilter("correr", "Correr", "run"),
     SportFilter("bienestar", "Bienestar", "wellness")
 )
 

@@ -1,5 +1,7 @@
 package com.tunalex.sportmap.navigation
 
+import androidx.compose.animation.EnterTransition
+import androidx.compose.animation.ExitTransition
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Icon
@@ -19,9 +21,7 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
-import com.tunalex.sportmap.ui.auth.ForgotPasswordScreen
-import com.tunalex.sportmap.ui.auth.LoginScreen
-import com.tunalex.sportmap.ui.auth.SignUpScreen
+import com.tunalex.sportmap.ui.auth.AuthScreen
 import com.tunalex.sportmap.ui.dashboard.DashboardScreen
 import com.tunalex.sportmap.ui.map.MapScreen
 import com.tunalex.sportmap.ui.map.RouteScreen
@@ -91,31 +91,22 @@ fun SportMapNavGraph(
             startDestination = startDestination,
             modifier = Modifier.weight(1f)
         ) {
-            composable(NavRoutes.LOGIN) {
-                LoginScreen(
-                    onLoginSuccess = {
+            composable(
+                NavRoutes.LOGIN,
+                // Sin animación: la pantalla de auth aparece/desaparece de golpe,
+                // para que nunca quede visible junto con la barra del DASHBOARD.
+                enterTransition = { EnterTransition.None },
+                exitTransition = { ExitTransition.None },
+                popEnterTransition = { EnterTransition.None },
+                popExitTransition = { ExitTransition.None }
+            ) {
+                // Login y Registro en una sola pantalla con transición interna.
+                AuthScreen(
+                    onEnterApp = {
                         navController.navigate(NavRoutes.DASHBOARD) {
                             popUpTo(NavRoutes.LOGIN) { inclusive = true }
                         }
-                    },
-                    onGoToSignUp = { navController.navigate(NavRoutes.SIGNUP) },
-                    onForgotPassword = { navController.navigate(NavRoutes.FORGOT_PASSWORD) }
-                )
-            }
-            composable(NavRoutes.FORGOT_PASSWORD) {
-                ForgotPasswordScreen(
-                    onBack = { navController.popBackStack() },
-                    onResetSuccess = { navController.popBackStack() }
-                )
-            }
-            composable(NavRoutes.SIGNUP) {
-                SignUpScreen(
-                    onSignUpSuccess = {
-                        navController.navigate(NavRoutes.DASHBOARD) {
-                            popUpTo(NavRoutes.LOGIN) { inclusive = true }
-                        }
-                    },
-                    onBack = { navController.popBackStack() }
+                    }
                 )
             }
             composable(NavRoutes.DASHBOARD) {

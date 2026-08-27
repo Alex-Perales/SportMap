@@ -34,6 +34,7 @@ import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
@@ -93,7 +94,15 @@ fun SettingsScreen(
     }
 
     Scaffold(
-        topBar = { TopAppBar(title = { Text("Ajustes", fontWeight = FontWeight.SemiBold) }) },
+        // El grafo de navegación ya deja el contenido bajo la barra de estado;
+        // evitamos que el Scaffold interno vuelva a sumar ese inset.
+        contentWindowInsets = WindowInsets(0, 0, 0, 0),
+        topBar = {
+            TopAppBar(
+                title = { Text("Ajustes", fontWeight = FontWeight.SemiBold) },
+                windowInsets = WindowInsets(0, 0, 0, 0)
+            )
+        },
         snackbarHost = { SnackbarHost(snackbar) }
     ) { padding ->
         Column(
@@ -114,7 +123,7 @@ fun SettingsScreen(
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     ProfileAvatar(
-                        imageUriOrEmoji = state.user?.profileImageUrl,
+                        imageUrl = state.user?.profileImageUrl,
                         fallbackLetter = state.user?.name?.firstOrNull()?.uppercase() ?: "?",
                         size = 56
                     )

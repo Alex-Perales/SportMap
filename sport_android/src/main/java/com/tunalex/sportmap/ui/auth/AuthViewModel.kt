@@ -8,23 +8,15 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 
-val SECURITY_QUESTIONS = listOf(
-    "¿Cuál es el nombre de tu primera mascota?",
-    "¿Cuál es tu comida favorita?",
-    "¿En qué distrito naciste?",
-    "¿Cuál es el nombre de tu mejor amigo de la infancia?"
-)
-
 data class AuthUiState(
     val name: String = "",
     val email: String = "",
     val password: String = "",
-    val passwordConfirm: String = "",
-    val securityQuestion: String = SECURITY_QUESTIONS.first(),
-    val securityAnswer: String = "",
+    val acceptedPolicy: Boolean = false,
     val loading: Boolean = false,
     val error: String? = null,
-    val success: Boolean = false
+    val success: Boolean = false,
+    val justRegistered: Boolean = false
 )
 
 class AuthViewModel(private val repo: AuthRepository) : ViewModel() {
@@ -35,10 +27,12 @@ class AuthViewModel(private val repo: AuthRepository) : ViewModel() {
     fun onName(v: String) = update { copy(name = v, error = null) }
     fun onEmail(v: String) = update { copy(email = v, error = null) }
     fun onPassword(v: String) = update { copy(password = v, error = null) }
-    fun onPasswordConfirm(v: String) = update { copy(passwordConfirm = v, error = null) }
-    fun onSecurityQuestion(v: String) = update { copy(securityQuestion = v, error = null) }
-    fun onSecurityAnswer(v: String) = update { copy(securityAnswer = v, error = null) }
-    fun resetSuccess() = update { copy(success = false) }
+    fun onAcceptPolicy(v: Boolean) = update { copy(acceptedPolicy = v, error = null) }
+    fun resetSuccess() = update { copy(success = false, justRegistered = false) }
+
+    /** Al alternar entre "Iniciar sesión" y "Crear cuenta": limpia el error y
+     *  la contraseña (no arrastramos credenciales de un modo al otro). */
+    fun onSwitchMode() = update { copy(error = null, password = "") }
 
     fun login() {
         val s = _state.value
@@ -55,15 +49,19 @@ class AuthViewModel(private val repo: AuthRepository) : ViewModel() {
 
     fun signUp() {
         val s = _state.value
-        if (s.password != s.passwordConfirm) {
-            update { copy(error = "Las contraseñas no coinciden.") }
+        if (!s.acceptedPolicy) {
+            update { copy(error = "Debes aceptar la Política de Privacidad para continuar.") }
             return
         }
         update { copy(loading = true, error = null) }
         viewModelScope.launch {
-            when (val r = repo.signUp(s.name, s.email, s.password, s.securityQuestion, s.securityAnswer)) {
-                is AuthRepository.AuthResult.Success ->
-                    update { copy(loading = false, success = true) }
+            when (val r = repo.signUp(s.name, s.email, s.password)) {
+                is AuthRepository.AuthResult.Success -> {
+                    // La cuenta queda creada pero SIN sesión iniciada: el usuario
+                    // debe entrar por "Iniciar sesión".
+                    repo.logout()
+                    update { copy(loading = false, success = true, justRegistered = true) }
+                }
                 is AuthRepository.AuthResult.Error ->
                     update { copy(loading = false, error = r.message) }
             }

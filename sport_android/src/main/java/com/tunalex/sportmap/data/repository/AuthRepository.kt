@@ -27,9 +27,7 @@ class AuthRepository(
     suspend fun signUp(
         name: String,
         email: String,
-        password: String,
-        securityQuestion: String,
-        securityAnswer: String
+        password: String
     ): AuthResult {
         if (name.isBlank() || email.isBlank() || password.isBlank()) {
             return AuthResult.Error("Completa todos los campos.")
@@ -39,9 +37,6 @@ class AuthRepository(
         }
         if (password.length < 6) {
             return AuthResult.Error("La contraseña debe tener al menos 6 caracteres.")
-        }
-        if (securityQuestion.isBlank() || securityAnswer.isBlank()) {
-            return AuthResult.Error("Selecciona una pregunta de seguridad y responde.")
         }
         val existing = userDao.findByEmail(email.lowercase().trim())
         if (existing != null) {
@@ -53,9 +48,7 @@ class AuthRepository(
         val newUser = UserEntity(
             name = name.trim(),
             email = email.lowercase().trim(),
-            passwordHash = passwordHash,
-            securityQuestion = securityQuestion,
-            securityAnswerHash = hash(securityAnswer.trim().lowercase())
+            passwordHash = passwordHash
         )
         val localId = userDao.insert(newUser)
         medalDao.insertAll(Seed.medalsForUser(localId))

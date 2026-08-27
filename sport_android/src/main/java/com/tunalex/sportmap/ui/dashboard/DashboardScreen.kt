@@ -151,7 +151,11 @@ fun DashboardScreen(
             Column(
                 modifier = Modifier
                     .fillMaxSize()
-                    .padding(padding)
+                    // El NavGraph ya deja el contenido debajo de la barra de
+                    // estado; aquí solo respetamos el inset de abajo. El margen
+                    // superior del hero es su propio padding de 16.dp (igual que
+                    // los laterales).
+                    .padding(bottom = padding.calculateBottomPadding())
                     .verticalScroll(rememberScrollState())
             ) {
                 HeroHeader(
@@ -161,6 +165,8 @@ fun DashboardScreen(
                 )
                 Spacer(Modifier.height(20.dp))
                 StatsRow(totalKm = state.totalKm, placesVisited = state.placesVisited)
+                Spacer(Modifier.height(20.dp))
+                RecommendedSection(ads = state.ads, onOpenPremium = onOpenPremium)
                 Spacer(Modifier.height(20.dp))
                 EresProBanner(
                     isPremium = state.user?.isPremium == true,
@@ -176,8 +182,6 @@ fun DashboardScreen(
                 }
                 Spacer(Modifier.height(20.dp))
                 DataSummarySection(state = state)
-                Spacer(Modifier.height(20.dp))
-                RecommendedSection(ads = state.ads, onOpenPremium = onOpenPremium)
                 Spacer(Modifier.height(96.dp))
             }
         }
@@ -204,7 +208,9 @@ private fun HeroHeader(userName: String, notificationCount: Int, onBellClick: ()
     Box(
         modifier = Modifier
             .fillMaxWidth()
-            .height(220.dp)
+            .padding(16.dp)
+            .height(200.dp)
+            .clip(RoundedCornerShape(24.dp))
     ) {
         AsyncImage(
             model = "https://images.unsplash.com/photo-1502082553048-f009c37129b9?w=1200",
@@ -222,7 +228,7 @@ private fun HeroHeader(userName: String, notificationCount: Int, onBellClick: ()
         Box(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(top = 12.dp, end = 8.dp),
+                .padding(8.dp),
             contentAlignment = Alignment.TopEnd
         ) {
             BadgedBox(

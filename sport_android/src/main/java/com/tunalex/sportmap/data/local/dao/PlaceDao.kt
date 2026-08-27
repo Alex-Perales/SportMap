@@ -4,6 +4,7 @@ import androidx.room.Dao
 import androidx.room.Insert
 import androidx.room.OnConflictStrategy
 import androidx.room.Query
+import androidx.room.Transaction
 import com.tunalex.sportmap.data.local.entity.PlaceEntity
 import kotlinx.coroutines.flow.Flow
 
@@ -12,6 +13,20 @@ interface PlaceDao {
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertAll(places: List<PlaceEntity>)
+
+    @Query("DELETE FROM places")
+    suspend fun clear()
+
+    /**
+     * Deja la tabla local idéntica a la del backend en una sola transacción:
+     * borra los lugares que ya no existen y reinserta el resto. Así el mapa y
+     * el panel de administración muestran exactamente las mismas canchas.
+     */
+    @Transaction
+    suspend fun replaceAll(places: List<PlaceEntity>) {
+        clear()
+        insertAll(places)
+    }
 
     @Query("SELECT * FROM places")
     fun observeAll(): Flow<List<PlaceEntity>>

@@ -25,6 +25,8 @@ import com.tunalex.sportmap.data.remote.ApiService
 import com.tunalex.sportmap.data.remote.CartItemRequest
 import com.tunalex.sportmap.data.remote.ReservationRequest
 import com.tunalex.sportmap.data.remote.UserUpdateRequest
+import com.tunalex.sportmap.data.remote.resolveBackendImageCsv
+import com.tunalex.sportmap.data.remote.resolveBackendImageUrl
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
@@ -57,12 +59,17 @@ class AppRepository(
         try {
             val serverId = getServerUserId()
             if (serverId > 0) {
+                // No mandes al backend una URI local ("file://" / "content://"):
+                // no le sirve a nadie más. null → el backend conserva la que ya
+                // tenga (la foto se sube por separado en /users/{id}/photo).
+                val remoteImage = user.profileImageUrl
+                    ?.takeUnless { it.startsWith("file:") || it.startsWith("content:") }
                 api.updateUser(
                     serverId,
                     UserUpdateRequest(
                         name = user.name,
                         district = user.district,
-                        profileImageUrl = user.profileImageUrl,
+                        profileImageUrl = remoteImage,
                         isPremium = user.isPremium
                     )
                 )
@@ -115,6 +122,7 @@ class AppRepository(
     suspend fun syncPlacesFromBackend() {
         try {
             val remote = api.getPlaces()
+            if (remote.isEmpty()) return
             val entities = remote.map { dto ->
                 PlaceEntity(
                     id = dto.id,
@@ -126,13 +134,13 @@ class AppRepository(
                     isPrivate = dto.isPrivate,
                     description = dto.description ?: "",
                     services = dto.services ?: "",
-                    photoUrls = dto.photoUrls ?: "",
+                    photoUrls = resolveBackendImageCsv(dto.photoUrls),
                     rating = dto.rating,
                     pricePerHour = dto.pricePerHour,
                     airQualityIndex = dto.airQualityIndex
                 )
             }
-            placeDao.insertAll(entities)
+            placeDao.replaceAll(entities)
         } catch (_: Exception) {}
     }
 
@@ -214,13 +222,14 @@ class AppRepository(
     suspend fun syncProductsFromBackend() {
         try {
             val remote = api.getProducts()
+            if (remote.isEmpty()) return
             val entities = remote.map { dto ->
                 ProductEntity(
                     id = dto.id,
                     name = dto.name,
                     description = dto.description ?: "",
                     price = dto.price,
-                    imageUrl = dto.imageUrl ?: "",
+                    imageUrl = resolveBackendImageUrl(dto.imageUrl),
                     category = dto.category,
                     sizes = dto.sizes ?: "",
                     stock = dto.stock,
@@ -228,7 +237,7 @@ class AppRepository(
                     discountPercent = dto.discountPercent
                 )
             }
-            productDao.insertAll(entities)
+            productDao.replaceAll(entities)
         } catch (_: Exception) {}
     }
 
@@ -453,7 +462,7 @@ class AppRepository(
             val entities = remote.map { dto ->
                 AdEntity(
                     id = dto.id,
-                    imageUrl = dto.imageUrl,
+                    imageUrl = resolveBackendImageUrl(dto.imageUrl),
                     badgeText = dto.badgeText,
                     title = dto.title,
                     subtitle = dto.subtitle,

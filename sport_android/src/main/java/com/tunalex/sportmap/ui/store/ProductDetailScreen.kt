@@ -93,6 +93,8 @@ fun ProductDetailScreen(
                     modifier = Modifier
                         .fillMaxWidth()
                         .height(320.dp)
+                        // Fondo neutro: si la imagen no carga se ve gris, no negro.
+                        .background(MaterialTheme.colorScheme.surfaceVariant)
                 )
                 IconButton(
                     onClick = onBack,
