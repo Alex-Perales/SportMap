@@ -4,11 +4,11 @@ import androidx.activity.compose.BackHandler
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
-import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.WindowInsets
@@ -31,6 +31,7 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -43,22 +44,24 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
-import com.tunalex.sportmap.ui.components.BrandLogo
 import com.tunalex.sportmap.viewmodel.SportMapViewModels
 import kotlinx.coroutines.launch
 
 enum class AuthMode { LOGIN, REGISTER }
 
-private val CARD_HEIGHT = 560.dp
-private val PANEL_REST = 176.dp
-private val PANEL_RADIUS = 76.dp
+private val PANEL_REST = 150.dp
+private val PANEL_RADIUS = 70.dp
+private val CARD_MIN = 500.dp
+private val CARD_MAX = 720.dp
 
 @Composable
 fun AuthScreen(
@@ -110,6 +113,11 @@ fun AuthScreen(
         containerColor = Color.Transparent,
         snackbarHost = { SnackbarHost(snackbar) }
     ) { _ ->
+        // La tarjeta ocupa casi toda la altura de la pantalla para que no haya
+        // que hacer scroll: título + campos + política + botón caben.
+        val screenH = LocalConfiguration.current.screenHeightDp.dp
+        val cardHeight = (screenH - 150.dp).coerceIn(CARD_MIN, CARD_MAX)
+
         Box(
             modifier = Modifier
                 .fillMaxSize()
@@ -120,14 +128,20 @@ fun AuthScreen(
                 modifier = Modifier
                     .fillMaxSize()
                     .verticalScroll(rememberScrollState())
-                    .padding(20.dp),
+                    .padding(horizontal = 20.dp, vertical = 12.dp),
                 horizontalAlignment = Alignment.CenterHorizontally,
                 verticalArrangement = Arrangement.Center
             ) {
-                BrandLogo(size = 66, onPrimaryColor = TealDark, nameColor = TealDark)
-                Spacer(Modifier.height(12.dp))
+                Text(
+                    "SportMap",
+                    color = TealDark,
+                    fontWeight = FontWeight.ExtraBold,
+                    fontSize = 30.sp
+                )
+                Spacer(Modifier.height(16.dp))
 
                 AuthCard(
+                    cardHeight = cardHeight,
                     mode = mode,
                     panelProgress = panelAnim.value,
                     state = state,
@@ -135,8 +149,6 @@ fun AuthScreen(
                     onToggleMode = ::toggle,
                     onShowPolicy = { showPolicy = true }
                 )
-
-                Spacer(Modifier.height(20.dp))
             }
         }
     }
@@ -144,6 +156,7 @@ fun AuthScreen(
 
 @Composable
 private fun AuthCard(
+    cardHeight: Dp,
     mode: AuthMode,
     panelProgress: Float,
     state: AuthUiState,
@@ -152,12 +165,12 @@ private fun AuthCard(
     onShowPolicy: () -> Unit
 ) {
     val isLogin = mode == AuthMode.LOGIN
-    val panelH = PANEL_REST + (CARD_HEIGHT - PANEL_REST) * panelProgress
+    val panelH = PANEL_REST + (cardHeight - PANEL_REST) * panelProgress
 
     Card(
         modifier = Modifier
             .fillMaxWidth()
-            .height(CARD_HEIGHT),
+            .height(cardHeight),
         shape = RoundedCornerShape(28.dp),
         colors = CardDefaults.cardColors(containerColor = CardSurface),
         elevation = CardDefaults.cardElevation(defaultElevation = 16.dp)
@@ -171,8 +184,8 @@ private fun AuthCard(
                 modifier = Modifier
                     .fillMaxSize()
                     .padding(
-                        top = if (isLogin) PANEL_REST + 14.dp else 22.dp,
-                        bottom = if (isLogin) 22.dp else PANEL_REST + 14.dp,
+                        top = if (isLogin) PANEL_REST + 12.dp else 20.dp,
+                        bottom = if (isLogin) 20.dp else PANEL_REST + 12.dp,
                         start = 22.dp,
                         end = 22.dp
                     )
@@ -181,7 +194,12 @@ private fun AuthCard(
                     if (isLogin) {
                         LoginContent(state, vm)
                     } else {
-                        RegisterContent(state, vm, onShowPolicy)
+                        RegisterContent(
+                            state = state,
+                            vm = vm,
+                            onShowPolicy = onShowPolicy,
+                            onBackToLogin = { onToggleMode(AuthMode.LOGIN) }
+                        )
                     }
                 }
             }
@@ -271,11 +289,26 @@ private fun LoginContent(state: AuthUiState, vm: AuthViewModel) {
 private fun RegisterContent(
     state: AuthUiState,
     vm: AuthViewModel,
-    onShowPolicy: () -> Unit
+    onShowPolicy: () -> Unit,
+    onBackToLogin: () -> Unit
 ) {
-    Text("Crear cuenta", fontWeight = FontWeight.ExtraBold, fontSize = 28.sp, color = InkDark)
-    Text("Regístrate para reservar y entrenar", fontSize = 12.sp, color = InkMuted)
-    Spacer(Modifier.height(18.dp))
+    Row(
+        verticalAlignment = Alignment.CenterVertically,
+        modifier = Modifier.fillMaxWidth()
+    ) {
+        Text(
+            "Crear cuenta",
+            fontWeight = FontWeight.ExtraBold,
+            fontSize = 24.sp,
+            color = InkDark,
+            modifier = Modifier.weight(1f)
+        )
+        TextButton(onClick = onBackToLogin, contentPadding = PaddingValues(horizontal = 4.dp)) {
+            Text("Iniciar sesión", color = TealDark, fontSize = 12.sp, fontWeight = FontWeight.SemiBold)
+        }
+    }
+    Text("Regístrate para reservar y entrenar", fontSize = 11.sp, color = InkMuted)
+    Spacer(Modifier.height(12.dp))
 
     AuthField(
         value = state.name,
@@ -283,7 +316,7 @@ private fun RegisterContent(
         placeholder = "Nombre completo",
         trailingIcon = Icons.Filled.PersonOutline
     )
-    Spacer(Modifier.height(12.dp))
+    Spacer(Modifier.height(10.dp))
     AuthField(
         value = state.email,
         onValueChange = vm::onEmail,
@@ -291,55 +324,43 @@ private fun RegisterContent(
         trailingIcon = Icons.Filled.AlternateEmail,
         keyboardType = KeyboardType.Email
     )
-    Spacer(Modifier.height(12.dp))
+    Spacer(Modifier.height(10.dp))
     AuthPasswordField(
         value = state.password,
         onValueChange = vm::onPassword,
         placeholder = "Contraseña (mín. 6)"
     )
 
-    Spacer(Modifier.height(16.dp))
+    Spacer(Modifier.height(10.dp))
 
-    // ── Aceptación de la política (destacada) ──────────────────────────
-    val policyBorder = if (state.acceptedPolicy) TealDark else Color(0xFFC24A4A)
-    Row(
-        verticalAlignment = Alignment.CenterVertically,
-        modifier = Modifier
-            .fillMaxWidth()
-            .clip(RoundedCornerShape(14.dp))
-            .background(
-                if (state.acceptedPolicy) TealDark.copy(alpha = 0.10f)
-                else Color(0xFFC24A4A).copy(alpha = 0.10f)
-            )
-            .border(1.5.dp, policyBorder, RoundedCornerShape(14.dp))
-            .clickable { vm.onAcceptPolicy(!state.acceptedPolicy) }
-            .padding(end = 10.dp)
-    ) {
+    // Casilla de política: sobria, con el recuadro de borde oscuro para que
+    // se note al seleccionar.
+    Row(verticalAlignment = Alignment.CenterVertically) {
         Checkbox(
             checked = state.acceptedPolicy,
             onCheckedChange = vm::onAcceptPolicy,
             colors = CheckboxDefaults.colors(
                 checkedColor = TealDark,
-                uncheckedColor = policyBorder
+                uncheckedColor = Color(0xFF2B2B2B),
+                checkmarkColor = Color.White
             )
         )
-        Column(modifier = Modifier.weight(1f)) {
-            Text("Acepto la Política de Privacidad", fontSize = 13.sp, fontWeight = FontWeight.Bold, color = InkDark)
-            Text(
-                "Obligatorio para crear la cuenta · toca para leerla",
-                fontSize = 10.sp,
-                color = TealDark,
-                modifier = Modifier.clickable { onShowPolicy() }
-            )
-        }
+        Text("Acepto la ", fontSize = 12.sp, color = InkMuted)
+        Text(
+            "Política de Privacidad",
+            fontSize = 12.sp,
+            fontWeight = FontWeight.Bold,
+            color = TealDark,
+            modifier = Modifier.clickable { onShowPolicy() }
+        )
     }
 
     if (state.error != null) {
-        Spacer(Modifier.height(8.dp))
+        Spacer(Modifier.height(6.dp))
         Text(state.error!!, color = MaterialTheme.colorScheme.error, fontSize = 12.sp)
     }
 
-    Spacer(Modifier.height(16.dp))
+    Spacer(Modifier.height(12.dp))
     GradientButton(
         text = "Crear cuenta",
         onClick = { vm.signUp() },
