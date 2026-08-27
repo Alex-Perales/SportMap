@@ -87,7 +87,7 @@ export const Navbar: React.FC<NavbarProps> = ({
           </nav>
 
           {/* Action Buttons */}
-          <div className="hidden sm:flex items-center gap-3">
+          <div className="hidden md:flex items-center gap-3">
             {/* Login: lleva al panel de administrador (mismo dominio/backend) */}
             <a
               href="/admin/login"

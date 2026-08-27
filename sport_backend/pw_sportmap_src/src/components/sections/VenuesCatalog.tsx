@@ -70,10 +70,10 @@ export const VenuesCatalog: React.FC<VenuesCatalogProps> = ({
 
         {/* Filter Controls Bar */}
         <div className="bg-slate-50 p-4 rounded-2xl border border-slate-200 mb-8 space-y-4">
-          <div className="flex flex-wrap items-center justify-between gap-4">
-            
+          <div className="flex flex-col sm:flex-row sm:flex-wrap sm:items-center sm:justify-between gap-4">
+
             {/* 5 Deportes en Fila */}
-            <div className="flex flex-wrap items-center bg-white p-1 rounded-xl border border-slate-200 shadow-xs gap-1">
+            <div className="flex flex-wrap items-center justify-center sm:justify-start bg-white p-1 rounded-xl border border-slate-200 shadow-xs gap-1">
               {SPORTS_FILTER_LIST.map((s) => {
                 const active = isSportActive(s.id);
                 return (
@@ -93,13 +93,13 @@ export const VenuesCatalog: React.FC<VenuesCatalogProps> = ({
             </div>
 
             {/* District Selector */}
-            <div className="flex items-center gap-2">
-              <Filter className="w-4 h-4 text-slate-500" />
-              <label className="text-sm font-bold text-slate-700">Distrito:</label>
+            <div className="flex items-center gap-2 w-full sm:w-auto">
+              <Filter className="w-4 h-4 text-slate-500 shrink-0" />
+              <label className="text-sm font-bold text-slate-700 shrink-0">Distrito:</label>
               <select
                 value={selectedDistrict}
                 onChange={(e) => setSelectedDistrict(e.target.value)}
-                className="bg-white border border-slate-300 rounded-xl px-3 py-2 text-sm font-semibold text-slate-800 focus:outline-none focus:border-emerald-600 cursor-pointer"
+                className="flex-1 sm:flex-none bg-white border border-slate-300 rounded-xl px-3 py-2 text-sm font-semibold text-slate-800 focus:outline-none focus:border-emerald-600 cursor-pointer"
               >
                 {LIMA_DISTRICTS.map((district) => (
                   <option key={district} value={district}>

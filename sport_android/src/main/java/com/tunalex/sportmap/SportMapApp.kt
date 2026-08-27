@@ -28,8 +28,14 @@ class SportMapApp : Application() {
             // Cargar lugares desde el backend (actualiza el caché Room)
             container.appRepository.syncPlacesFromBackend()
 
-            // Seed local de lugares si Room está vacío
-            container.database.placeDao().insertAll(Seed.PLACES)
+            // Seed local de lugares solo si Room sigue vacío (p.ej. sin backend
+            // disponible). Antes se insertaba siempre y, como los IDs del seed
+            // coinciden con los del backend, pisaba los lugares recién
+            // sincronizados en cada apertura de la app.
+            val placeCount = container.database.placeDao().count()
+            if (placeCount == 0) {
+                container.database.placeDao().insertAll(Seed.PLACES)
+            }
 
             // Cargar productos desde el backend
             container.appRepository.syncProductsFromBackend()

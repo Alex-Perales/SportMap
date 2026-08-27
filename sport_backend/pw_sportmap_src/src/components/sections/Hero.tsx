@@ -90,7 +90,7 @@ export const Hero: React.FC<HeroProps> = ({ onOpenDownloadModal, onExploreCancha
       <button
         onClick={handlePrev}
         aria-label="Slide anterior"
-        className="absolute left-4 sm:left-8 top-1/2 -translate-y-1/2 z-30 w-12 h-12 sm:w-14 sm:h-14 rounded-full bg-slate-950/60 hover:bg-emerald-600 text-white border border-white/20 flex items-center justify-center transition-all cursor-pointer backdrop-blur-md shadow-2xl hover:scale-110 active:scale-95 group"
+        className="hidden sm:flex absolute left-4 sm:left-8 top-1/2 -translate-y-1/2 z-30 w-12 h-12 sm:w-14 sm:h-14 rounded-full bg-slate-950/60 hover:bg-emerald-600 text-white border border-white/20 items-center justify-center transition-all cursor-pointer backdrop-blur-md shadow-2xl hover:scale-110 active:scale-95 group"
       >
         <ChevronLeft className="w-6 h-6 group-hover:-translate-x-0.5 transition-transform" />
       </button>
@@ -99,7 +99,7 @@ export const Hero: React.FC<HeroProps> = ({ onOpenDownloadModal, onExploreCancha
       <button
         onClick={handleNext}
         aria-label="Siguiente slide"
-        className="absolute right-4 sm:right-8 top-1/2 -translate-y-1/2 z-30 w-12 h-12 sm:w-14 sm:h-14 rounded-full bg-slate-950/60 hover:bg-emerald-600 text-white border border-white/20 flex items-center justify-center transition-all cursor-pointer backdrop-blur-md shadow-2xl hover:scale-110 active:scale-95 group"
+        className="hidden sm:flex absolute right-4 sm:right-8 top-1/2 -translate-y-1/2 z-30 w-12 h-12 sm:w-14 sm:h-14 rounded-full bg-slate-950/60 hover:bg-emerald-600 text-white border border-white/20 items-center justify-center transition-all cursor-pointer backdrop-blur-md shadow-2xl hover:scale-110 active:scale-95 group"
       >
         <ChevronRight className="w-6 h-6 group-hover:translate-x-0.5 transition-transform" />
       </button>

@@ -45,7 +45,7 @@ export const DownloadModal: React.FC<DownloadModalProps> = ({ isOpen, onClose })
         {/* Content */}
         <div className="p-6 space-y-5">
           {/* Store & APK Buttons */}
-          <div className="grid grid-cols-2 gap-3 mb-2">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-2">
             <a
               href="#download"
               onClick={onClose}
@@ -74,7 +74,7 @@ export const DownloadModal: React.FC<DownloadModalProps> = ({ isOpen, onClose })
           </div>
 
           {/* QR Code Section */}
-          <div className="flex items-center gap-4 p-4 bg-slate-50 rounded-xl border border-slate-200 mb-6">
+          <div className="flex flex-col sm:flex-row items-center text-center sm:text-left gap-4 p-4 bg-slate-50 rounded-xl border border-slate-200 mb-6">
             <div className="bg-white p-2 rounded-lg border border-slate-200 shadow-sm shrink-0">
               {/* Simulated QR Code SVG */}
               <svg className="w-20 h-20 text-slate-900" viewBox="0 0 100 100" fill="currentColor">
