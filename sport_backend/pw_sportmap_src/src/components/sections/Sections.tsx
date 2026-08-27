@@ -34,7 +34,7 @@ export const PageBanner: React.FC<PageBannerProps> = ({
   image,
 }) => {
   return (
-    <div className="relative w-full h-48 sm:h-56 mt-16 sm:mt-20 overflow-hidden">
+    <div className="relative w-full min-h-[12rem] sm:h-56 py-6 sm:py-0 mt-16 sm:mt-20 overflow-hidden">
       <img
         src={image}
         alt={title}
@@ -43,7 +43,7 @@ export const PageBanner: React.FC<PageBannerProps> = ({
       />
       <div className="absolute inset-0 bg-gradient-to-r from-slate-950/85 via-slate-900/55 to-slate-950/25" />
 
-      <div className="relative z-10 h-full flex items-center max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div className="relative z-10 sm:h-full flex items-center max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="max-w-2xl text-white">
           <h1 className="text-2xl sm:text-3xl md:text-4xl font-black tracking-tight text-white mb-3 drop-shadow-sm leading-tight">
             {title}
