@@ -28,6 +28,7 @@ import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
@@ -70,9 +71,14 @@ fun StoreScreen(
     val state by vm.state.collectAsStateWithLifecycle()
 
     Scaffold(
+        // El grafo de navegación ya coloca el contenido debajo de la barra de
+        // estado; sin esto el Scaffold interno volvería a sumar ese inset y el
+        // título quedaba demasiado abajo.
+        contentWindowInsets = WindowInsets(0, 0, 0, 0),
         topBar = {
             TopAppBar(
                 title = { Text("Tienda SportMap", fontWeight = FontWeight.SemiBold) },
+                windowInsets = WindowInsets(0, 0, 0, 0),
                 actions = {
                     IconButton(onClick = onCartClick) {
                         BadgedBox(

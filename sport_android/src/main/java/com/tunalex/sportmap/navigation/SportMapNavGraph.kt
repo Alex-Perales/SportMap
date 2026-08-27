@@ -1,5 +1,7 @@
 package com.tunalex.sportmap.navigation
 
+import androidx.compose.animation.EnterTransition
+import androidx.compose.animation.ExitTransition
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Icon
@@ -91,7 +93,15 @@ fun SportMapNavGraph(
             startDestination = startDestination,
             modifier = Modifier.weight(1f)
         ) {
-            composable(NavRoutes.LOGIN) {
+            composable(
+                NavRoutes.LOGIN,
+                // Sin animación: el LOGIN aparece/desaparece de golpe, para que
+                // nunca quede visible junto con la barra inferior del DASHBOARD.
+                enterTransition = { EnterTransition.None },
+                exitTransition = { ExitTransition.None },
+                popEnterTransition = { EnterTransition.None },
+                popExitTransition = { ExitTransition.None }
+            ) {
                 LoginScreen(
                     onLoginSuccess = {
                         navController.navigate(NavRoutes.DASHBOARD) {
@@ -108,10 +118,16 @@ fun SportMapNavGraph(
                     onResetSuccess = { navController.popBackStack() }
                 )
             }
-            composable(NavRoutes.SIGNUP) {
+            composable(
+                NavRoutes.SIGNUP,
+                exitTransition = { ExitTransition.None },
+                popExitTransition = { ExitTransition.None }
+            ) {
                 SignUpScreen(
+                    // Tras crear la cuenta NO se entra a la app: se vuelve a
+                    // "Iniciar sesión" para que el usuario ingrese con sus datos.
                     onSignUpSuccess = {
-                        navController.navigate(NavRoutes.DASHBOARD) {
+                        navController.navigate(NavRoutes.LOGIN) {
                             popUpTo(NavRoutes.LOGIN) { inclusive = true }
                         }
                     },
