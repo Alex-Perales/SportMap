@@ -732,12 +732,13 @@ private fun ErrorCard(message: String) {
 @Composable
 private fun RouteInfoPanel(placeName: String, result: RouteResult, destLatLng: LatLng?) {
     var showSteps by remember { mutableStateOf(false) }
+    var minimized by remember { mutableStateOf(false) }
     val context = LocalContext.current
 
     RouteSheet {
-        Column(modifier = Modifier.padding(horizontal = 20.dp, vertical = 14.dp)) {
+        Column(modifier = Modifier.padding(start = 20.dp, end = 8.dp, top = 6.dp, bottom = 14.dp)) {
 
-            // Encabezado: destino
+            // Encabezado: destino + botón minimizar / restaurar
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Box(
                     modifier = Modifier
@@ -765,26 +766,40 @@ private fun RouteInfoPanel(placeName: String, result: RouteResult, destLatLng: L
                         overflow = TextOverflow.Ellipsis
                     )
                 }
+                IconButton(onClick = { minimized = !minimized }) {
+                    Icon(
+                        if (minimized) Icons.Filled.ExpandLess else Icons.Filled.Close,
+                        contentDescription = if (minimized) "Expandir" else "Minimizar",
+                        tint = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
             }
 
-            Spacer(Modifier.height(16.dp))
-
-            // Tarjetas de distancia y tiempo
-            Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                RouteStatTile(
-                    modifier = Modifier.weight(1f),
-                    icon = Icons.Filled.Route,
-                    accent = OrangeAlert,
-                    value = result.distanceText,
-                    label = "Distancia"
-                )
-                RouteStatTile(
-                    modifier = Modifier.weight(1f),
-                    icon = Icons.Filled.Schedule,
-                    accent = BlueVibrant,
-                    value = result.durationText,
-                    label = "Tiempo est."
-                )
+            // Tarjetas de distancia y tiempo (se ocultan al minimizar)
+            AnimatedVisibility(
+                visible = !minimized,
+                enter = expandVertically() + fadeIn(),
+                exit = shrinkVertically() + fadeOut()
+            ) {
+                Column {
+                    Spacer(Modifier.height(16.dp))
+                    Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                        RouteStatTile(
+                            modifier = Modifier.weight(1f),
+                            icon = Icons.Filled.Route,
+                            accent = OrangeAlert,
+                            value = result.distanceText,
+                            label = "Distancia"
+                        )
+                        RouteStatTile(
+                            modifier = Modifier.weight(1f),
+                            icon = Icons.Filled.Schedule,
+                            accent = BlueVibrant,
+                            value = result.durationText,
+                            label = "Tiempo est."
+                        )
+                    }
+                }
             }
 
             Spacer(Modifier.height(14.dp))
@@ -820,7 +835,7 @@ private fun RouteInfoPanel(placeName: String, result: RouteResult, destLatLng: L
                 Text("Iniciar navegación", fontWeight = FontWeight.Bold, fontSize = 15.sp)
             }
 
-            if (result.steps.isNotEmpty()) {
+            if (result.steps.isNotEmpty() && !minimized) {
                 Spacer(Modifier.height(10.dp))
                 HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
 

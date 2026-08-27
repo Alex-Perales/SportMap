@@ -114,7 +114,7 @@ fun SettingsScreen(
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     ProfileAvatar(
-                        imageUriOrEmoji = state.user?.profileImageUrl,
+                        imageUrl = state.user?.profileImageUrl,
                         fallbackLetter = state.user?.name?.firstOrNull()?.uppercase() ?: "?",
                         size = 56
                     )

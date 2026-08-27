@@ -22,7 +22,6 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -152,13 +151,14 @@ fun DashboardScreen(
             Column(
                 modifier = Modifier
                     .fillMaxSize()
-                    // Solo respetamos el inset de abajo: así el hero sube y queda
-                    // casi pegado al borde superior (el reloj/estado se respeta
-                    // dentro del propio hero con statusBarsPadding).
-                    .padding(bottom = padding.calculateBottomPadding())
+                    // Respetamos los insets del sistema arriba y abajo; el hero
+                    // añade su propio margen de 16.dp por los 4 lados.
+                    .padding(
+                        top = padding.calculateTopPadding(),
+                        bottom = padding.calculateBottomPadding()
+                    )
                     .verticalScroll(rememberScrollState())
             ) {
-                Spacer(Modifier.height(6.dp))
                 HeroHeader(
                     userName = state.user?.name ?: "deportista",
                     notificationCount = notifications.size,
@@ -209,8 +209,8 @@ private fun HeroHeader(userName: String, notificationCount: Int, onBellClick: ()
     Box(
         modifier = Modifier
             .fillMaxWidth()
-            .height(208.dp)
-            .padding(horizontal = 16.dp)
+            .padding(16.dp)
+            .height(200.dp)
             .clip(RoundedCornerShape(24.dp))
     ) {
         AsyncImage(
@@ -223,14 +223,18 @@ private fun HeroHeader(userName: String, notificationCount: Int, onBellClick: ()
             modifier = Modifier
                 .fillMaxSize()
                 .background(
-                    Brush.verticalGradient(listOf(Color.Transparent, IndigoDeep.copy(alpha = 0.85f)))
+                    Brush.verticalGradient(
+                        listOf(
+                            Color(0xFF15803D).copy(alpha = 0.30f),
+                            Color(0xFF14532D).copy(alpha = 0.90f)
+                        )
+                    )
                 )
         )
         Box(
             modifier = Modifier
                 .fillMaxSize()
-                .statusBarsPadding()
-                .padding(top = 4.dp, end = 8.dp),
+                .padding(8.dp),
             contentAlignment = Alignment.TopEnd
         ) {
             BadgedBox(

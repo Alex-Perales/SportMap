@@ -1,6 +1,5 @@
 package com.tunalex.sportmap.ui.settings
 
-import android.content.Intent
 import android.net.Uri
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
@@ -10,7 +9,6 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -18,24 +16,17 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.lazy.grid.GridCells
-import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
-import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AddAPhoto
 import androidx.compose.material.icons.filled.ArrowBack
-import androidx.compose.material.icons.filled.Image
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.ModalBottomSheet
-import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHost
@@ -63,16 +54,9 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import coil.compose.AsyncImage
 import coil.request.ImageRequest
+import com.tunalex.sportmap.data.remote.resolveBackendImageUrl
 import com.tunalex.sportmap.ui.theme.BlueVibrant
 import com.tunalex.sportmap.viewmodel.SportMapViewModels
-
-private val SPORT_EMOJIS = listOf(
-    "⚽", "🏀", "🎾", "🏈", "⚾", "🏐",
-    "🏉", "🎱", "🏓", "🏸", "🥊", "🤼",
-    "🏊", "🚴", "🏋️", "🤸", "⛷️", "🏄",
-    "🎯", "🏹", "🥋", "🤺", "🧗", "🤾",
-    "🦁", "🐯", "🦅", "🦊", "🐺", "🦋"
-)
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -86,36 +70,32 @@ fun EditProfileScreen(
     var name by remember { mutableStateOf("") }
     var district by remember { mutableStateOf("") }
     var profileImageUri by remember { mutableStateOf<String?>(null) }
-    var showAvatarSheet by remember { mutableStateOf(false) }
     var uploadingPhoto by remember { mutableStateOf(false) }
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
 
+    // Al tocar el avatar se abre directo la galería (sin menú intermedio).
     val galleryLauncher = rememberLauncherForActivityResult(
-        contract = ActivityResultContracts.OpenDocument()
+        contract = ActivityResultContracts.GetContent()
     ) { uri: Uri? ->
-        uri?.let {
-            try {
-                context.contentResolver.takePersistableUriPermission(
-                    it, Intent.FLAG_GRANT_READ_URI_PERMISSION
-                )
-            } catch (_: SecurityException) { }
-            // Muestra la foto local de inmediato y, en paralelo, la sube a
-            // Supabase para tener una URL real (la URI local solo sirve en
-            // este dispositivo).
-            profileImageUri = it.toString()
-            scope.launch {
-                uploadingPhoto = true
-                val file = copyUriToCacheFile(context, it)
-                if (file != null) {
-                    vm.uploadProfilePhoto(file).onSuccess { url ->
-                        if (url.isNotBlank()) profileImageUri = url
-                    }.onFailure {
-                        snackbar.showSnackbar("No se pudo subir la foto. Se guardará solo en este dispositivo.")
-                    }
+        uri ?: return@rememberLauncherForActivityResult
+        scope.launch {
+            uploadingPhoto = true
+            // Copiamos la imagen a un archivo propio de la app: así se ve al
+            // instante y sigue disponible aunque el servidor no responda o se
+            // reinicie la app (la URI de la galería es temporal).
+            val file = copyUriToProfileFile(context, uri)
+            if (file != null) {
+                profileImageUri = Uri.fromFile(file).toString()
+                vm.uploadProfilePhoto(file).onSuccess { url ->
+                    if (url.isNotBlank()) profileImageUri = url
+                }.onFailure {
+                    snackbar.showSnackbar("Foto guardada en este dispositivo (no se subió al servidor).")
                 }
-                uploadingPhoto = false
+            } else {
+                snackbar.showSnackbar("No se pudo leer la imagen elegida.")
             }
+            uploadingPhoto = false
         }
     }
 
@@ -135,21 +115,6 @@ fun EditProfileScreen(
                 is SettingsViewModel.SettingsEvent.ProfileSaved -> onBack()
                 else -> {}
             }
-        }
-    }
-
-    if (showAvatarSheet) {
-        ModalBottomSheet(onDismissRequest = { showAvatarSheet = false }) {
-            AvatarPickerSheet(
-                onPickGallery = {
-                    showAvatarSheet = false
-                    galleryLauncher.launch(arrayOf("image/*"))
-                },
-                onPickEmoji = { emoji ->
-                    profileImageUri = "emoji:$emoji"
-                    showAvatarSheet = false
-                }
-            )
         }
     }
 
@@ -175,10 +140,10 @@ fun EditProfileScreen(
                 modifier = Modifier.padding(bottom = 4.dp)
             ) {
                 ProfileAvatar(
-                    imageUriOrEmoji = profileImageUri,
+                    imageUrl = profileImageUri,
                     fallbackLetter = state.user?.name?.firstOrNull()?.uppercase() ?: "?",
                     size = 96,
-                    modifier = Modifier.clickable { showAvatarSheet = true }
+                    modifier = Modifier.clickable { galleryLauncher.launch("image/*") }
                 )
                 if (uploadingPhoto) {
                     androidx.compose.material3.CircularProgressIndicator(
@@ -205,7 +170,7 @@ fun EditProfileScreen(
             }
 
             Text(
-                "Toca para cambiar tu avatar",
+                "Toca para elegir una foto de tu galería",
                 fontSize = 12.sp,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
@@ -259,12 +224,24 @@ fun EditProfileScreen(
 
 @Composable
 fun ProfileAvatar(
-    imageUriOrEmoji: String?,
+    imageUrl: String?,
     fallbackLetter: String,
     size: Int,
     modifier: Modifier = Modifier
 ) {
     val context = LocalContext.current
+
+    // Normaliza la URL para que la app siempre pueda cargarla:
+    //  - "/uploads/perfiles/x.jpg" (ruta relativa del backend) o un host
+    //    "localhost" → se reescribe al host del backend de la app.
+    //  - "file://…" (foto elegida de la galería, ya copiada localmente) y las
+    //    URLs de Supabase / Unsplash → se dejan igual.
+    //  - "emoji:…" (avatares antiguos) → se ignora y se muestra la inicial.
+    val photoModel: String? = imageUrl
+        ?.takeUnless { it.startsWith("emoji:") }
+        ?.let { resolveBackendImageUrl(it) }
+        ?.ifBlank { null }
+
     Box(
         modifier = modifier
             .size(size.dp)
@@ -272,92 +249,34 @@ fun ProfileAvatar(
             .background(BlueVibrant),
         contentAlignment = Alignment.Center
     ) {
-        when {
-            imageUriOrEmoji?.startsWith("emoji:") == true -> {
-                Text(
-                    text = imageUriOrEmoji.removePrefix("emoji:"),
-                    fontSize = (size * 0.44f).sp
-                )
-            }
-            imageUriOrEmoji != null -> {
-                AsyncImage(
-                    model = ImageRequest.Builder(context)
-                        .data(Uri.parse(imageUriOrEmoji))
-                        .crossfade(true)
-                        .build(),
-                    contentDescription = "Foto de perfil",
-                    contentScale = ContentScale.Crop,
-                    modifier = Modifier.fillMaxSize()
-                )
-            }
-            else -> {
-                Text(
-                    text = fallbackLetter,
-                    color = Color.White,
-                    fontSize = (size * 0.4f).sp,
-                    fontWeight = FontWeight.Bold
-                )
-            }
-        }
-    }
-}
-
-@OptIn(ExperimentalMaterial3Api::class)
-@Composable
-private fun AvatarPickerSheet(
-    onPickGallery: () -> Unit,
-    onPickEmoji: (String) -> Unit
-) {
-    Column(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(horizontal = 20.dp)
-            .padding(bottom = 40.dp)
-    ) {
-        Text("Elige tu avatar", fontWeight = FontWeight.Bold, fontSize = 18.sp)
-        Spacer(Modifier.height(16.dp))
-        OutlinedButton(
-            onClick = onPickGallery,
-            modifier = Modifier.fillMaxWidth(),
-            shape = RoundedCornerShape(12.dp)
-        ) {
-            Icon(Icons.Filled.Image, null, modifier = Modifier.size(18.dp))
-            Spacer(Modifier.width(8.dp))
-            Text("Elegir desde Galería")
-        }
-        Spacer(Modifier.height(20.dp))
+        // Inicial de respaldo SIEMPRE debajo: si la foto no carga, en vez de
+        // un círculo azul vacío se ve la letra.
         Text(
-            "Emojis deportivos",
-            fontWeight = FontWeight.SemiBold,
-            fontSize = 14.sp,
-            color = MaterialTheme.colorScheme.onSurfaceVariant
+            text = fallbackLetter,
+            color = Color.White,
+            fontSize = (size * 0.4f).sp,
+            fontWeight = FontWeight.Bold
         )
-        Spacer(Modifier.height(10.dp))
-        LazyVerticalGrid(
-            columns = GridCells.Fixed(6),
-            verticalArrangement = Arrangement.spacedBy(8.dp),
-            horizontalArrangement = Arrangement.spacedBy(8.dp),
-            modifier = Modifier.height(260.dp)
-        ) {
-            items(SPORT_EMOJIS) { emoji ->
-                Box(
-                    modifier = Modifier
-                        .size(44.dp)
-                        .clip(RoundedCornerShape(10.dp))
-                        .background(MaterialTheme.colorScheme.surfaceVariant)
-                        .clickable { onPickEmoji(emoji) },
-                    contentAlignment = Alignment.Center
-                ) {
-                    Text(emoji, fontSize = 22.sp)
-                }
-            }
+        if (photoModel != null) {
+            AsyncImage(
+                model = ImageRequest.Builder(context)
+                    .data(photoModel)
+                    .crossfade(true)
+                    .build(),
+                contentDescription = "Foto de perfil",
+                contentScale = ContentScale.Crop,
+                modifier = Modifier.fillMaxSize()
+            )
         }
     }
 }
 
-private fun copyUriToCacheFile(context: android.content.Context, uri: Uri): java.io.File? = try {
+/** Copia la imagen elegida a un archivo propio de la app (persistente).
+ *  Devuelve null si no se pudo leer la URI. */
+private fun copyUriToProfileFile(context: android.content.Context, uri: Uri): java.io.File? = try {
     val input = context.contentResolver.openInputStream(uri) ?: return null
-    val file = java.io.File(context.cacheDir, "avatar_${System.currentTimeMillis()}.jpg")
+    val dir = java.io.File(context.filesDir, "profile").apply { mkdirs() }
+    val file = java.io.File(dir, "avatar_${System.currentTimeMillis()}.jpg")
     input.use { stream -> file.outputStream().use { out -> stream.copyTo(out) } }
     file
 } catch (_: Exception) {

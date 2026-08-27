@@ -59,12 +59,17 @@ class AppRepository(
         try {
             val serverId = getServerUserId()
             if (serverId > 0) {
+                // No mandes al backend una URI local ("file://" / "content://"):
+                // no le sirve a nadie más. null → el backend conserva la que ya
+                // tenga (la foto se sube por separado en /users/{id}/photo).
+                val remoteImage = user.profileImageUrl
+                    ?.takeUnless { it.startsWith("file:") || it.startsWith("content:") }
                 api.updateUser(
                     serverId,
                     UserUpdateRequest(
                         name = user.name,
                         district = user.district,
-                        profileImageUrl = user.profileImageUrl,
+                        profileImageUrl = remoteImage,
                         isPremium = user.isPremium
                     )
                 )
