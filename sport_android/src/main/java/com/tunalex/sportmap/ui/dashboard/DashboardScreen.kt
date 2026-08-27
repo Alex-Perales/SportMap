@@ -151,12 +151,11 @@ fun DashboardScreen(
             Column(
                 modifier = Modifier
                     .fillMaxSize()
-                    // Respetamos los insets del sistema arriba y abajo; el hero
-                    // añade su propio margen de 16.dp por los 4 lados.
-                    .padding(
-                        top = padding.calculateTopPadding(),
-                        bottom = padding.calculateBottomPadding()
-                    )
+                    // El NavGraph ya deja el contenido debajo de la barra de
+                    // estado; aquí solo respetamos el inset de abajo. El margen
+                    // superior del hero es su propio padding de 16.dp (igual que
+                    // los laterales).
+                    .padding(bottom = padding.calculateBottomPadding())
                     .verticalScroll(rememberScrollState())
             ) {
                 HeroHeader(
@@ -223,12 +222,7 @@ private fun HeroHeader(userName: String, notificationCount: Int, onBellClick: ()
             modifier = Modifier
                 .fillMaxSize()
                 .background(
-                    Brush.verticalGradient(
-                        listOf(
-                            Color(0xFF15803D).copy(alpha = 0.30f),
-                            Color(0xFF14532D).copy(alpha = 0.90f)
-                        )
-                    )
+                    Brush.verticalGradient(listOf(Color.Transparent, IndigoDeep.copy(alpha = 0.85f)))
                 )
         )
         Box(
