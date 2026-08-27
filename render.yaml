@@ -15,6 +15,7 @@ services:
     runtime: docker
     plan: free
     region: virginia          # mismo lado que Supabase us-east-1
+    branch: feature/admin-panel-mejoras
     rootDir: sport_backend
     dockerfilePath: ./Dockerfile
     dockerContext: .
