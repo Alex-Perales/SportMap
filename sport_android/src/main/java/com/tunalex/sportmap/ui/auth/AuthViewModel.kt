@@ -24,7 +24,8 @@ data class AuthUiState(
     val acceptedPolicy: Boolean = false,
     val loading: Boolean = false,
     val error: String? = null,
-    val success: Boolean = false
+    val success: Boolean = false,
+    val justRegistered: Boolean = false
 )
 
 class AuthViewModel(private val repo: AuthRepository) : ViewModel() {
@@ -38,7 +39,11 @@ class AuthViewModel(private val repo: AuthRepository) : ViewModel() {
     fun onSecurityQuestion(v: String) = update { copy(securityQuestion = v, error = null) }
     fun onSecurityAnswer(v: String) = update { copy(securityAnswer = v, error = null) }
     fun onAcceptPolicy(v: Boolean) = update { copy(acceptedPolicy = v, error = null) }
-    fun resetSuccess() = update { copy(success = false) }
+    fun resetSuccess() = update { copy(success = false, justRegistered = false) }
+
+    /** Al alternar entre "Iniciar sesión" y "Crear cuenta": limpia el error y
+     *  la contraseña (no arrastramos credenciales de un modo al otro). */
+    fun onSwitchMode() = update { copy(error = null, password = "") }
 
     fun login() {
         val s = _state.value
@@ -64,9 +69,9 @@ class AuthViewModel(private val repo: AuthRepository) : ViewModel() {
             when (val r = repo.signUp(s.name, s.email, s.password, s.securityQuestion, s.securityAnswer)) {
                 is AuthRepository.AuthResult.Success -> {
                     // La cuenta queda creada pero SIN sesión iniciada: el usuario
-                    // debe entrar por la pantalla de inicio de sesión.
+                    // debe entrar por "Iniciar sesión".
                     repo.logout()
-                    update { copy(loading = false, success = true) }
+                    update { copy(loading = false, success = true, justRegistered = true) }
                 }
                 is AuthRepository.AuthResult.Error ->
                     update { copy(loading = false, error = r.message) }

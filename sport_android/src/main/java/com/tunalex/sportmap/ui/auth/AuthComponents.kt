@@ -1,38 +1,34 @@
 package com.tunalex.sportmap.ui.auth
 
 import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Visibility
 import androidx.compose.material.icons.filled.VisibilityOff
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
+import androidx.compose.material3.TextField
+import androidx.compose.material3.TextFieldDefaults
+import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -50,221 +46,151 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
-import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
-import com.tunalex.sportmap.ui.components.BrandLogo
-import com.tunalex.sportmap.ui.theme.BlueMedium
-import com.tunalex.sportmap.ui.theme.BlueVibrant
-import com.tunalex.sportmap.ui.theme.IndigoDeep
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import org.json.JSONArray
 import java.net.HttpURLConnection
 import java.net.URL
 
-enum class AuthTab { LOGIN, SIGNUP }
+// ── Paleta (mismos tonos que el diseño de referencia) ───────────────────────
+val TealDark = Color(0xFF0E4C59)
+val TealMid = Color(0xFF16788C)
+val CyanBright = Color(0xFF12C6D6)
+val AuthBgTop = Color(0xFFBFE6E9)
+val AuthBgBottom = Color(0xFF8FD1D8)
+val CardSurface = Color(0xFFECEDEE)
+val FieldSurface = Color(0xFFE1E3E4)
+val InkDark = Color(0xFF1E2A2E)
+val InkMuted = Color(0xFF5B6B70)
 
-private val AccentPurple = Color(0xFF7C3AED)
+val AuthBackgroundBrush = Brush.verticalGradient(listOf(AuthBgTop, AuthBgBottom))
+val TealPanelBrush = Brush.verticalGradient(listOf(TealDark, TealMid))
+val PrimaryButtonBrush = Brush.horizontalGradient(listOf(TealDark, CyanBright))
 
-/**
- * Fondo degradado (3 colores) + tarjeta central con cabecera degradada y un
- * selector "Iniciar sesión / Registrarse". Compartido por LoginScreen y
- * SignUpScreen para que ambas se vean iguales y sea claro cómo alternar.
- */
+// ── Campo de texto gris redondeado con icono a la derecha ───────────────────
 @Composable
-fun AuthScaffold(
-    subtitle: String,
-    activeTab: AuthTab,
-    onSelectTab: (AuthTab) -> Unit,
-    onBack: (() -> Unit)? = null,
-    content: @Composable ColumnScope.() -> Unit
-) {
-    Box(
-        modifier = Modifier
-            .fillMaxSize()
-            .background(Brush.verticalGradient(listOf(BlueMedium, BlueVibrant, IndigoDeep)))
-    ) {
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .verticalScroll(rememberScrollState())
-                .padding(horizontal = 20.dp, vertical = 40.dp),
-            horizontalAlignment = Alignment.CenterHorizontally
-        ) {
-            Spacer(Modifier.height(12.dp))
-            BrandLogo(size = 84)
-            Spacer(Modifier.height(6.dp))
-            Text(
-                text = subtitle,
-                color = Color.White.copy(alpha = 0.9f),
-                fontSize = 13.sp,
-                textAlign = TextAlign.Center
-            )
-            Spacer(Modifier.height(22.dp))
-
-            Card(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .widthIn(max = 460.dp),
-                shape = RoundedCornerShape(28.dp),
-                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-                elevation = CardDefaults.cardElevation(defaultElevation = 16.dp)
-            ) {
-                // Cabecera degradada (3 colores) con el selector de pestañas
-                Box(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .background(
-                            Brush.horizontalGradient(listOf(BlueVibrant, IndigoDeep, AccentPurple))
-                        )
-                        .padding(8.dp)
-                ) {
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .clip(RoundedCornerShape(50))
-                            .background(Color.White.copy(alpha = 0.15f))
-                            .padding(4.dp)
-                    ) {
-                        AuthTabButton(
-                            text = "Iniciar sesión",
-                            selected = activeTab == AuthTab.LOGIN,
-                            modifier = Modifier.weight(1f),
-                            onClick = { onSelectTab(AuthTab.LOGIN) }
-                        )
-                        AuthTabButton(
-                            text = "Registrarse",
-                            selected = activeTab == AuthTab.SIGNUP,
-                            modifier = Modifier.weight(1f),
-                            onClick = { onSelectTab(AuthTab.SIGNUP) }
-                        )
-                    }
-                }
-
-                Column(
-                    modifier = Modifier.padding(horizontal = 20.dp, vertical = 22.dp),
-                    content = content
-                )
-            }
-
-            Spacer(Modifier.height(28.dp))
-        }
-
-        if (onBack != null) {
-            IconButton(
-                onClick = onBack,
-                modifier = Modifier
-                    .align(Alignment.TopStart)
-                    .padding(top = 20.dp, start = 8.dp)
-            ) {
-                Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Atrás", tint = Color.White)
-            }
-        }
-    }
-}
-
-@Composable
-private fun AuthTabButton(
-    text: String,
-    selected: Boolean,
-    modifier: Modifier = Modifier,
-    onClick: () -> Unit
-) {
-    Box(
-        modifier = modifier
-            .clip(RoundedCornerShape(50))
-            .background(if (selected) Color.White else Color.Transparent)
-            .clickable(onClick = onClick)
-            .padding(vertical = 10.dp),
-        contentAlignment = Alignment.Center
-    ) {
-        Text(
-            text = text,
-            color = if (selected) BlueVibrant else Color.White,
-            fontWeight = if (selected) FontWeight.Bold else FontWeight.Medium,
-            fontSize = 13.sp
-        )
-    }
-}
-
-/** Campo de texto sobre la tarjeta clara (texto oscuro sobre fondo claro). */
-@Composable
-fun AuthCardField(
+fun AuthField(
     value: String,
     onValueChange: (String) -> Unit,
-    label: String,
-    leadingIcon: ImageVector,
+    placeholder: String,
+    trailingIcon: ImageVector,
     keyboardType: KeyboardType = KeyboardType.Text,
     visualTransformation: VisualTransformation = VisualTransformation.None,
-    trailingIcon: @Composable (() -> Unit)? = null,
+    trailing: (@Composable () -> Unit)? = null,
     modifier: Modifier = Modifier
 ) {
-    OutlinedTextField(
+    TextField(
         value = value,
         onValueChange = onValueChange,
-        label = { Text(label) },
-        leadingIcon = { Icon(leadingIcon, contentDescription = null, tint = BlueVibrant) },
-        trailingIcon = trailingIcon,
+        placeholder = { Text(placeholder, color = InkMuted) },
+        trailingIcon = trailing ?: { Icon(trailingIcon, contentDescription = null, tint = InkDark) },
         singleLine = true,
         keyboardOptions = KeyboardOptions(keyboardType = keyboardType),
         visualTransformation = visualTransformation,
-        shape = RoundedCornerShape(14.dp),
-        modifier = modifier.fillMaxWidth(),
-        colors = OutlinedTextFieldDefaults.colors(
-            focusedBorderColor = BlueVibrant,
-            cursorColor = BlueVibrant,
-            focusedLabelColor = BlueVibrant
+        shape = RoundedCornerShape(28.dp),
+        modifier = modifier
+            .fillMaxWidth()
+            .heightIn(min = 56.dp),
+        colors = TextFieldDefaults.colors(
+            focusedContainerColor = FieldSurface,
+            unfocusedContainerColor = FieldSurface,
+            disabledContainerColor = FieldSurface,
+            focusedIndicatorColor = Color.Transparent,
+            unfocusedIndicatorColor = Color.Transparent,
+            disabledIndicatorColor = Color.Transparent,
+            cursorColor = TealDark,
+            focusedTextColor = InkDark,
+            unfocusedTextColor = InkDark
         )
     )
 }
 
-/**
- * Campo de contraseña única. El ojito revela el texto SOLO mientras se
- * mantiene presionado; al soltar, se vuelve a ocultar.
- */
+/** Contraseña única: el ojito revela el texto SOLO mientras se mantiene presionado. */
 @Composable
-fun HoldToRevealPasswordField(
+fun AuthPasswordField(
     value: String,
     onValueChange: (String) -> Unit,
-    label: String,
-    leadingIcon: ImageVector,
+    placeholder: String,
     modifier: Modifier = Modifier
 ) {
     var revealed by remember { mutableStateOf(false) }
-    AuthCardField(
+    AuthField(
         value = value,
         onValueChange = onValueChange,
-        label = label,
-        leadingIcon = leadingIcon,
+        placeholder = placeholder,
+        trailingIcon = Icons.Filled.VisibilityOff,
         keyboardType = KeyboardType.Password,
         visualTransformation = if (revealed) VisualTransformation.None else PasswordVisualTransformation(),
         modifier = modifier,
-        trailingIcon = {
+        trailing = {
             Icon(
                 imageVector = if (revealed) Icons.Filled.Visibility else Icons.Filled.VisibilityOff,
                 contentDescription = "Mantén presionado para ver la contraseña",
-                tint = BlueVibrant.copy(alpha = 0.7f),
+                tint = InkDark,
                 modifier = Modifier
-                    .padding(end = 4.dp)
+                    .padding(end = 6.dp)
                     .size(24.dp)
                     .pointerInput(Unit) {
-                        detectTapGestures(
-                            onPress = {
-                                revealed = true
-                                tryAwaitRelease()
-                                revealed = false
-                            }
-                        )
+                        detectTapGestures(onPress = {
+                            revealed = true
+                            tryAwaitRelease()
+                            revealed = false
+                        })
                     }
             )
         }
     )
 }
 
-// ── Política de privacidad ───────────────────────────────────────────────────
+/** Botón principal con degradado teal → cian. */
+@Composable
+fun GradientButton(
+    text: String,
+    onClick: () -> Unit,
+    enabled: Boolean = true,
+    loading: Boolean = false,
+    modifier: Modifier = Modifier
+) {
+    Box(
+        modifier = modifier
+            .fillMaxWidth()
+            .height(52.dp)
+            .clip(RoundedCornerShape(28.dp))
+            .background(if (enabled) PrimaryButtonBrush else Brush.horizontalGradient(listOf(InkMuted, InkMuted)))
+            .then(
+                if (enabled && !loading)
+                    Modifier.pointerInput(Unit) { detectTapGestures(onTap = { onClick() }) }
+                else Modifier
+            ),
+        contentAlignment = Alignment.Center
+    ) {
+        if (loading) {
+            CircularProgressIndicator(color = Color.White, strokeWidth = 2.dp, modifier = Modifier.size(22.dp))
+        } else {
+            Text(text, color = Color.White, fontWeight = FontWeight.Bold, fontSize = 16.sp)
+        }
+    }
+}
 
+/** Botón con borde (el de la franja teal: "Registrarse" / "Iniciar sesión"). */
+@Composable
+fun OutlineChipButton(text: String, onClick: () -> Unit, modifier: Modifier = Modifier) {
+    Box(
+        modifier = modifier
+            .clip(RoundedCornerShape(24.dp))
+            .background(Color.White.copy(alpha = 0.10f))
+            .pointerInput(Unit) { detectTapGestures(onTap = { onClick() }) }
+            .padding(horizontal = 34.dp, vertical = 12.dp),
+        contentAlignment = Alignment.Center
+    ) {
+        Text(text, color = Color.White, fontWeight = FontWeight.Bold, fontSize = 15.sp)
+    }
+}
+
+// ── Política de privacidad (contenido traído de internet) ───────────────────
 private const val POLICY_URL =
     "https://baconipsum.com/api/?type=meat-and-filler&paras=6&format=text"
 
@@ -272,13 +198,13 @@ private const val FALLBACK_POLICY = """SportMap valora tu privacidad.
 
 1. Datos que recopilamos: nombre, correo electrónico y, opcionalmente, tu foto de perfil y distrito. También guardamos tus reservas, favoritos y actividad deportiva para mostrarte estadísticas.
 
-2. Uso de los datos: se usan únicamente para el funcionamiento de la app (autenticación, reservas, recomendaciones y soporte). No vendemos tus datos a terceros.
+2. Uso de los datos: se usan únicamente para el funcionamiento de la app (autenticación, reservas de canchas y espacios, recomendaciones y soporte). No vendemos tus datos a terceros.
 
-3. Ubicación: la usamos solo mientras la app está abierta para mostrarte lugares cercanos y calcular rutas. Puedes desactivarla desde Ajustes.
+3. Ubicación: la usamos solo mientras la app está abierta para mostrarte lugares cercanos y calcular rutas hacia tu reserva. Puedes desactivarla desde Ajustes.
 
-4. Almacenamiento: tus datos se guardan de forma local en tu dispositivo y en nuestro servidor. Las fotos pueden alojarse en un proveedor de almacenamiento (Supabase).
+4. Almacenamiento: tus datos se guardan de forma local en tu dispositivo y en nuestro servidor. Las fotos pueden alojarse en un proveedor de almacenamiento externo.
 
-5. Tus derechos: puedes editar tu perfil o eliminar tu cuenta en cualquier momento desde Ajustes. Al eliminar la cuenta se borran tus datos asociados.
+5. Tus derechos: puedes editar tu perfil o eliminar tu cuenta cuando quieras desde Ajustes. Al eliminar la cuenta se borran tus datos asociados.
 
 6. Contacto: para consultas sobre privacidad escríbenos desde la sección de Ayuda."""
 
@@ -288,13 +214,12 @@ private suspend fun fetchPrivacyPolicy(): String = withContext(Dispatchers.IO) {
             connectTimeout = 8000
             readTimeout = 8000
         }
-        val body = conn.inputStream.bufferedReader().use { it.readText() }.trim()
+        val raw = conn.inputStream.bufferedReader().use { it.readText() }.trim()
         conn.disconnect()
-        // La API de ejemplo puede devolver texto plano o un arreglo JSON.
-        val text = if (body.startsWith("[")) {
-            val arr = JSONArray(body)
+        val text = if (raw.startsWith("[")) {
+            val arr = JSONArray(raw)
             (0 until arr.length()).joinToString("\n\n") { arr.getString(it) }
-        } else body
+        } else raw
         if (text.isBlank()) FALLBACK_POLICY else text
     } catch (_: Exception) {
         FALLBACK_POLICY
@@ -330,7 +255,7 @@ fun PrivacyPolicyDialog(onDismiss: () -> Unit) {
                             CircularProgressIndicator(
                                 modifier = Modifier.size(20.dp),
                                 strokeWidth = 2.dp,
-                                color = BlueVibrant
+                                color = TealDark
                             )
                             Text(
                                 "   Cargando política…",
@@ -343,11 +268,8 @@ fun PrivacyPolicyDialog(onDismiss: () -> Unit) {
                     }
                 }
                 Spacer(Modifier.height(8.dp))
-                TextButton(
-                    onClick = onDismiss,
-                    modifier = Modifier.align(Alignment.End)
-                ) {
-                    Text("Cerrar", color = BlueVibrant, fontWeight = FontWeight.SemiBold)
+                TextButton(onClick = onDismiss, modifier = Modifier.align(Alignment.End)) {
+                    Text("Cerrar", color = TealDark, fontWeight = FontWeight.SemiBold)
                 }
             }
         }

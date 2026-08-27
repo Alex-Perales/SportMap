@@ -21,9 +21,8 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
+import com.tunalex.sportmap.ui.auth.AuthScreen
 import com.tunalex.sportmap.ui.auth.ForgotPasswordScreen
-import com.tunalex.sportmap.ui.auth.LoginScreen
-import com.tunalex.sportmap.ui.auth.SignUpScreen
 import com.tunalex.sportmap.ui.dashboard.DashboardScreen
 import com.tunalex.sportmap.ui.map.MapScreen
 import com.tunalex.sportmap.ui.map.RouteScreen
@@ -95,20 +94,20 @@ fun SportMapNavGraph(
         ) {
             composable(
                 NavRoutes.LOGIN,
-                // Sin animación: el LOGIN aparece/desaparece de golpe, para que
-                // nunca quede visible junto con la barra inferior del DASHBOARD.
+                // Sin animación: la pantalla de auth aparece/desaparece de golpe,
+                // para que nunca quede visible junto con la barra del DASHBOARD.
                 enterTransition = { EnterTransition.None },
                 exitTransition = { ExitTransition.None },
                 popEnterTransition = { EnterTransition.None },
                 popExitTransition = { ExitTransition.None }
             ) {
-                LoginScreen(
-                    onLoginSuccess = {
+                // Login y Registro en una sola pantalla con transición interna.
+                AuthScreen(
+                    onEnterApp = {
                         navController.navigate(NavRoutes.DASHBOARD) {
                             popUpTo(NavRoutes.LOGIN) { inclusive = true }
                         }
                     },
-                    onGoToSignUp = { navController.navigate(NavRoutes.SIGNUP) },
                     onForgotPassword = { navController.navigate(NavRoutes.FORGOT_PASSWORD) }
                 )
             }
@@ -116,22 +115,6 @@ fun SportMapNavGraph(
                 ForgotPasswordScreen(
                     onBack = { navController.popBackStack() },
                     onResetSuccess = { navController.popBackStack() }
-                )
-            }
-            composable(
-                NavRoutes.SIGNUP,
-                exitTransition = { ExitTransition.None },
-                popExitTransition = { ExitTransition.None }
-            ) {
-                SignUpScreen(
-                    // Tras crear la cuenta NO se entra a la app: se vuelve a
-                    // "Iniciar sesión" para que el usuario ingrese con sus datos.
-                    onSignUpSuccess = {
-                        navController.navigate(NavRoutes.LOGIN) {
-                            popUpTo(NavRoutes.LOGIN) { inclusive = true }
-                        }
-                    },
-                    onBack = { navController.popBackStack() }
                 )
             }
             composable(NavRoutes.DASHBOARD) {
