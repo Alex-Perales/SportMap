@@ -22,6 +22,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -151,9 +152,13 @@ fun DashboardScreen(
             Column(
                 modifier = Modifier
                     .fillMaxSize()
-                    .padding(padding)
+                    // Solo respetamos el inset de abajo: así el hero sube y queda
+                    // casi pegado al borde superior (el reloj/estado se respeta
+                    // dentro del propio hero con statusBarsPadding).
+                    .padding(bottom = padding.calculateBottomPadding())
                     .verticalScroll(rememberScrollState())
             ) {
+                Spacer(Modifier.height(6.dp))
                 HeroHeader(
                     userName = state.user?.name ?: "deportista",
                     notificationCount = notifications.size,
@@ -204,7 +209,9 @@ private fun HeroHeader(userName: String, notificationCount: Int, onBellClick: ()
     Box(
         modifier = Modifier
             .fillMaxWidth()
-            .height(220.dp)
+            .height(208.dp)
+            .padding(horizontal = 16.dp)
+            .clip(RoundedCornerShape(24.dp))
     ) {
         AsyncImage(
             model = "https://images.unsplash.com/photo-1502082553048-f009c37129b9?w=1200",
@@ -222,7 +229,8 @@ private fun HeroHeader(userName: String, notificationCount: Int, onBellClick: ()
         Box(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(top = 12.dp, end = 8.dp),
+                .statusBarsPadding()
+                .padding(top = 4.dp, end = 8.dp),
             contentAlignment = Alignment.TopEnd
         ) {
             BadgedBox(

@@ -25,6 +25,8 @@ import com.tunalex.sportmap.data.remote.ApiService
 import com.tunalex.sportmap.data.remote.CartItemRequest
 import com.tunalex.sportmap.data.remote.ReservationRequest
 import com.tunalex.sportmap.data.remote.UserUpdateRequest
+import com.tunalex.sportmap.data.remote.resolveBackendImageCsv
+import com.tunalex.sportmap.data.remote.resolveBackendImageUrl
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
@@ -115,6 +117,7 @@ class AppRepository(
     suspend fun syncPlacesFromBackend() {
         try {
             val remote = api.getPlaces()
+            if (remote.isEmpty()) return
             val entities = remote.map { dto ->
                 PlaceEntity(
                     id = dto.id,
@@ -126,13 +129,13 @@ class AppRepository(
                     isPrivate = dto.isPrivate,
                     description = dto.description ?: "",
                     services = dto.services ?: "",
-                    photoUrls = dto.photoUrls ?: "",
+                    photoUrls = resolveBackendImageCsv(dto.photoUrls),
                     rating = dto.rating,
                     pricePerHour = dto.pricePerHour,
                     airQualityIndex = dto.airQualityIndex
                 )
             }
-            placeDao.insertAll(entities)
+            placeDao.replaceAll(entities)
         } catch (_: Exception) {}
     }
 
@@ -221,7 +224,7 @@ class AppRepository(
                     name = dto.name,
                     description = dto.description ?: "",
                     price = dto.price,
-                    imageUrl = dto.imageUrl ?: "",
+                    imageUrl = resolveBackendImageUrl(dto.imageUrl),
                     category = dto.category,
                     sizes = dto.sizes ?: "",
                     stock = dto.stock,
@@ -454,7 +457,7 @@ class AppRepository(
             val entities = remote.map { dto ->
                 AdEntity(
                     id = dto.id,
-                    imageUrl = dto.imageUrl,
+                    imageUrl = resolveBackendImageUrl(dto.imageUrl),
                     badgeText = dto.badgeText,
                     title = dto.title,
                     subtitle = dto.subtitle,

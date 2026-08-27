@@ -58,6 +58,7 @@ import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -159,11 +160,17 @@ fun MapScreen(
             }
 
             state.placesWithDistance.forEach { (place, distKm) ->
-                PlaceMapContent(
-                    place = place,
-                    distanceKm = distKm,
-                    onPlaceClick = onPlaceClick
-                )
+                // key() ata cada marcador a su lugar por id. Sin esto, cuando la
+                // lista se reordena (p.ej. al llegar la ubicación GPS y ordenar
+                // por distancia) los MarkerState se reutilizan por posición y el
+                // pin termina mostrando el ícono/título de otro lugar.
+                key(place.id) {
+                    PlaceMapContent(
+                        place = place,
+                        distanceKm = distKm,
+                        onPlaceClick = onPlaceClick
+                    )
+                }
             }
         }
 
@@ -247,6 +254,8 @@ private fun PlaceMapContent(
 ) {
     val pos = LatLng(place.lat, place.lng)
     val markerState = rememberMarkerState(position = pos)
+    // Si el lugar cambia de coordenadas (edición desde el panel), reposiciona.
+    LaunchedEffect(pos) { markerState.position = pos }
     val snippet = buildString {
         if (distanceKm != null) append("${"%.1f".format(distanceKm)} km · ")
         append(if (place.isPrivate) "Privado" else "Público")
@@ -411,8 +420,11 @@ private fun SportFilterDrawer(
 
         ALL_SPORTS.forEach { sport ->
             FilterChip(
-                label = if (sport.key == "todos") sport.label else "${sport.emoji}  ${sport.label}",
+                label = sport.label,
                 icon = iconForSport(sport.iconKey),
+                // "Todos" mantiene su ícono vectorial; cada deporte muestra solo
+                // su emoji (antes salía el ícono vectorial + el emoji = dos).
+                emoji = if (sport.key == "todos") null else sport.emoji,
                 isSelected = sport.key == selected,
                 activeColor = BlueVibrant,
                 onClick = { onSelect(sport.key) },
@@ -430,7 +442,8 @@ private fun FilterChip(
     isSelected: Boolean,
     activeColor: Color,
     onClick: () -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    emoji: String? = null
 ) {
     Card(
         onClick = onClick,
@@ -447,12 +460,16 @@ private fun FilterChip(
             modifier = Modifier.padding(horizontal = 14.dp, vertical = 8.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            Icon(
-                imageVector = icon,
-                contentDescription = null,
-                tint = if (isSelected) Color.White else MaterialTheme.colorScheme.onSurface,
-                modifier = Modifier.size(18.dp)
-            )
+            if (emoji != null) {
+                Text(emoji, fontSize = 14.sp)
+            } else {
+                Icon(
+                    imageVector = icon,
+                    contentDescription = null,
+                    tint = if (isSelected) Color.White else MaterialTheme.colorScheme.onSurface,
+                    modifier = Modifier.size(18.dp)
+                )
+            }
             Spacer(Modifier.width(6.dp))
             Text(
                 text = label,

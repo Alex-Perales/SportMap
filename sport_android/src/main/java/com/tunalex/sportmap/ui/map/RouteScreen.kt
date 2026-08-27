@@ -2,9 +2,12 @@ package com.tunalex.sportmap.ui.map
 
 import android.Manifest
 import android.annotation.SuppressLint
+import android.content.Intent
 import android.content.pm.PackageManager
 import android.location.Geocoder
+import android.net.Uri
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import java.util.Locale
 import androidx.activity.compose.rememberLauncherForActivityResult
@@ -18,9 +21,13 @@ import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutVertically
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.text.BasicTextField
+import androidx.compose.foundation.text.KeyboardActions
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -36,6 +43,7 @@ import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.DirectionsWalk
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.ExpandLess
@@ -45,8 +53,10 @@ import androidx.compose.material.icons.filled.KeyboardArrowUp
 import androidx.compose.material.icons.filled.Map
 import androidx.compose.material.icons.filled.MyLocation
 import androidx.compose.material.icons.filled.Navigation
+import androidx.compose.material.icons.filled.Place
 import androidx.compose.material.icons.filled.Route
 import androidx.compose.material.icons.filled.Schedule
+import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
@@ -57,21 +67,25 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.ImeAction
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.core.content.ContextCompat
@@ -95,6 +109,8 @@ import com.tunalex.sportmap.data.remote.RouteResult
 import com.tunalex.sportmap.data.remote.RouteStep
 import com.tunalex.sportmap.ui.theme.BlueVibrant
 import com.tunalex.sportmap.ui.theme.GreenSafe
+import com.tunalex.sportmap.ui.theme.OrangeAlert
+import com.tunalex.sportmap.ui.theme.RedDanger
 import com.tunalex.sportmap.viewmodel.SportMapViewModels
 
 private val LIMA_CENTER = LatLng(-12.1167, -77.0339)
@@ -108,6 +124,7 @@ fun RouteScreen(
 ) {
     val state by vm.state.collectAsStateWithLifecycle()
     val context = LocalContext.current
+    val scope = rememberCoroutineScope()
     val fusedClient = remember { LocationServices.getFusedLocationProviderClient(context) }
 
     val cameraPositionState = rememberCameraPositionState {
@@ -172,6 +189,32 @@ fun RouteScreen(
         else permLauncher.launch(Manifest.permission.ACCESS_FINE_LOCATION)
     }
 
+    // Geocodifica el texto escrito (dirección o nombre de lugar) y arranca la
+    // ruta desde esa coordenada.
+    fun onSearchTypedOrigin(query: String) {
+        val q = query.trim()
+        if (q.isBlank()) return
+        scope.launch {
+            val latLng = withContext(Dispatchers.IO) {
+                try {
+                    @Suppress("DEPRECATION")
+                    Geocoder(context, Locale("es", "PE"))
+                        .getFromLocationName("$q, Lima, Perú", 1)
+                        ?.firstOrNull()
+                        ?.let { LatLng(it.latitude, it.longitude) }
+                } catch (_: Exception) {
+                    null
+                }
+            }
+            if (latLng != null) {
+                vm.setOriginLabel(q)
+                vm.startRoute(latLng)
+            } else {
+                vm.setError("No encontramos \"$q\". Prueba con una dirección más específica.")
+            }
+        }
+    }
+
     when (state.phase) {
         RoutePhase.SELECT_ORIGIN -> {
             if (state.mapPickerActive) {
@@ -189,7 +232,8 @@ fun RouteScreen(
                     onBack = onBack,
                     onUseCurrentLocation = { onUseCurrentLocation() },
                     onPickOnMap = { vm.activateMapPicker() },
-                    onSearch = { state.pickedOrigin?.let { vm.startRoute(it) } }
+                    onSearch = { state.pickedOrigin?.let { vm.startRoute(it) } },
+                    onSearchAddress = { onSearchTypedOrigin(it) }
                 )
             }
         }
@@ -213,68 +257,101 @@ private fun OriginSelectionScreen(
     onBack: () -> Unit,
     onUseCurrentLocation: () -> Unit,
     onPickOnMap: () -> Unit,
-    onSearch: () -> Unit
+    onSearch: () -> Unit,
+    onSearchAddress: (String) -> Unit
 ) {
-    // Controls collapse/expand of the origin options
-    var expanded by remember { mutableStateOf(true) }
+    // Opciones colapsadas por defecto: se despliegan al tocar el chevron.
+    var expanded by remember { mutableStateOf(false) }
+    var query by remember { mutableStateOf("") }
+
+    // Refleja en el campo la dirección obtenida al elegir en el mapa / usar GPS.
+    LaunchedEffect(state.originLabel) {
+        state.originLabel?.let { if (it != query) query = it }
+    }
+
+    val hasText = query.isNotBlank()
+    val dotColor = if (state.pickedOrigin != null || hasText) GreenSafe
+        else MaterialTheme.colorScheme.outline
 
     Column(modifier = Modifier.fillMaxSize()) {
 
-        // ── Header panel (white card) ────────────────────────────────────────
+        // ── Header panel ─────────────────────────────────────────────────────
         Card(
             modifier = Modifier.fillMaxWidth(),
-            shape = RoundedCornerShape(bottomStart = 16.dp, bottomEnd = 16.dp),
-            elevation = CardDefaults.cardElevation(defaultElevation = 6.dp),
+            shape = RoundedCornerShape(bottomStart = 20.dp, bottomEnd = 20.dp),
+            elevation = CardDefaults.cardElevation(defaultElevation = 8.dp),
             colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
         ) {
-            Column {
-                // Back + search field + collapse toggle
+            Column(modifier = Modifier.padding(bottom = 8.dp)) {
+                // Back + campo editable + chevron
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(horizontal = 4.dp, vertical = 6.dp),
+                        .padding(horizontal = 4.dp, vertical = 8.dp),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     IconButton(onClick = onBack) {
                         Icon(Icons.Filled.ArrowBack, contentDescription = "Volver", tint = MaterialTheme.colorScheme.onSurface)
                     }
 
-                    // Origin field
-                    Box(
+                    // Campo de origen — EDITABLE
+                    Row(
                         modifier = Modifier
                             .weight(1f)
                             .clip(RoundedCornerShape(24.dp))
                             .background(MaterialTheme.colorScheme.surfaceVariant)
-                            .padding(horizontal = 14.dp, vertical = 10.dp)
+                            .padding(start = 14.dp, end = 2.dp),
+                        verticalAlignment = Alignment.CenterVertically
                     ) {
-                        Row(verticalAlignment = Alignment.CenterVertically) {
-                            Box(
-                                modifier = Modifier
-                                    .size(10.dp)
-                                    .clip(CircleShape)
-                                    .background(
-                                        if (state.pickedOrigin != null) GreenSafe
-                                        else MaterialTheme.colorScheme.outline
-                                    )
-                            )
-                            Spacer(Modifier.width(10.dp))
-                            Text(
-                                text = when {
-                                    state.originLabel != null -> state.originLabel
-                                    state.pickedOrigin != null -> "Obteniendo dirección…"
-                                    else -> "Selecciona un punto de partida"
-                                },
-                                color = if (state.pickedOrigin != null)
-                                    MaterialTheme.colorScheme.onSurface
-                                else
-                                    MaterialTheme.colorScheme.outline,
-                                fontSize = 14.sp,
-                                maxLines = 1
+                        Box(
+                            modifier = Modifier
+                                .size(10.dp)
+                                .clip(CircleShape)
+                                .background(dotColor)
+                        )
+                        Spacer(Modifier.width(10.dp))
+                        BasicTextField(
+                            value = query,
+                            onValueChange = { query = it },
+                            singleLine = true,
+                            textStyle = TextStyle(
+                                color = MaterialTheme.colorScheme.onSurface,
+                                fontSize = 14.sp
+                            ),
+                            cursorBrush = SolidColor(BlueVibrant),
+                            keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search),
+                            keyboardActions = KeyboardActions(onSearch = { onSearchAddress(query) }),
+                            modifier = Modifier
+                                .weight(1f)
+                                .padding(vertical = 14.dp),
+                            decorationBox = { inner ->
+                                Box(contentAlignment = Alignment.CenterStart) {
+                                    if (query.isEmpty()) {
+                                        Text(
+                                            "Escribe una dirección o lugar",
+                                            color = MaterialTheme.colorScheme.outline,
+                                            fontSize = 14.sp,
+                                            maxLines = 1,
+                                            overflow = TextOverflow.Ellipsis
+                                        )
+                                    }
+                                    inner()
+                                }
+                            }
+                        )
+                        IconButton(
+                            onClick = { onSearchAddress(query) },
+                            enabled = hasText
+                        ) {
+                            Icon(
+                                Icons.Filled.Search,
+                                contentDescription = "Buscar dirección",
+                                tint = if (hasText) BlueVibrant else MaterialTheme.colorScheme.outline
                             )
                         }
                     }
 
-                    // Collapse / expand toggle  >
+                    // Colapsar / desplegar opciones
                     IconButton(onClick = { expanded = !expanded }) {
                         Icon(
                             imageVector = if (expanded) Icons.Filled.KeyboardArrowUp
@@ -285,13 +362,23 @@ private fun OriginSelectionScreen(
                     }
                 }
 
-                // ── Collapsible options ──────────────────────────────────────
+                state.error?.let { err ->
+                    Text(
+                        err,
+                        color = RedDanger,
+                        fontSize = 12.sp,
+                        modifier = Modifier.padding(horizontal = 20.dp, vertical = 2.dp)
+                    )
+                }
+
+                // ── Opciones colapsables ─────────────────────────────────────
                 AnimatedVisibility(
                     visible = expanded,
                     enter = expandVertically() + fadeIn(),
                     exit = shrinkVertically() + fadeOut()
                 ) {
                     Column {
+                        Spacer(Modifier.height(4.dp))
                         HorizontalDivider()
                         OriginOption(
                             icon = Icons.Filled.MyLocation,
@@ -308,14 +395,14 @@ private fun OriginSelectionScreen(
                         )
                         HorizontalDivider()
 
-                        // Search button — only enabled when a point was picked
+                        // Botón — activo cuando ya hay un punto elegido en el mapa/GPS
                         Button(
                             onClick = onSearch,
                             enabled = state.pickedOrigin != null,
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .padding(horizontal = 16.dp, vertical = 10.dp)
-                                .heightIn(min = 48.dp),
+                                .padding(horizontal = 16.dp, vertical = 12.dp)
+                                .heightIn(min = 50.dp),
                             shape = RoundedCornerShape(24.dp),
                             colors = ButtonDefaults.buttonColors(
                                 containerColor = GreenSafe,
@@ -487,7 +574,7 @@ private fun RouteResultScreen(
                 scrollGesturesEnabled = true
             ),
             // Push zoom controls and attribution above the bottom info panel
-            contentPadding = PaddingValues(bottom = 190.dp)
+            contentPadding = PaddingValues(bottom = 240.dp)
         ) {
             // Origin — GREEN pin (where user starts)
             state.origin?.let { o ->
@@ -567,7 +654,8 @@ private fun RouteResultScreen(
                 state.error != null -> ErrorCard(state.error!!)
                 state.result != null -> RouteInfoPanel(
                     placeName = state.place?.name ?: "",
-                    result = state.result!!
+                    result = state.result!!,
+                    destLatLng = state.place?.let { LatLng(it.lat, it.lng) }
                 )
             }
         }
@@ -576,150 +664,299 @@ private fun RouteResultScreen(
 
 // ─── Shared sub-composables ───────────────────────────────────────────────────
 
+/** Contenedor común de las tarjetas inferiores: hoja redondeada arriba, con
+ *  "asa" (drag handle) para que se lea como un bottom sheet profesional. */
+@Composable
+private fun RouteSheet(content: @Composable ColumnScope.() -> Unit) {
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(topStart = 28.dp, topEnd = 28.dp),
+        elevation = CardDefaults.cardElevation(defaultElevation = 16.dp),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
+    ) {
+        Column(modifier = Modifier.fillMaxWidth()) {
+            Box(
+                modifier = Modifier
+                    .padding(top = 10.dp)
+                    .align(Alignment.CenterHorizontally)
+                    .size(width = 40.dp, height = 4.dp)
+                    .clip(RoundedCornerShape(2.dp))
+                    .background(MaterialTheme.colorScheme.outlineVariant)
+            )
+            content()
+        }
+    }
+}
+
 @Composable
 private fun LoadingCard() {
-    Card(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(16.dp),
-        shape = RoundedCornerShape(16.dp)
-    ) {
+    RouteSheet {
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(20.dp),
+                .padding(24.dp),
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.Center
         ) {
-            CircularProgressIndicator(modifier = Modifier.size(24.dp), strokeWidth = 2.dp, color = GreenSafe)
-            Spacer(Modifier.width(12.dp))
-            Text("Calculando ruta…", fontSize = 14.sp)
+            CircularProgressIndicator(modifier = Modifier.size(22.dp), strokeWidth = 2.5.dp, color = BlueVibrant)
+            Spacer(Modifier.width(14.dp))
+            Text("Calculando la mejor ruta…", fontSize = 14.sp, fontWeight = FontWeight.Medium)
         }
     }
 }
 
 @Composable
 private fun ErrorCard(message: String) {
-    Card(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(16.dp),
-        shape = RoundedCornerShape(16.dp),
-        colors = CardDefaults.cardColors(containerColor = Color(0xFFFFEBEE))
-    ) {
-        Text(
-            text = message,
-            modifier = Modifier.padding(16.dp),
-            color = Color(0xFFB71C1C),
-            fontSize = 14.sp
-        )
+    RouteSheet {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(20.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Box(
+                modifier = Modifier
+                    .size(38.dp)
+                    .clip(CircleShape)
+                    .background(RedDanger.copy(alpha = 0.12f)),
+                contentAlignment = Alignment.Center
+            ) {
+                Icon(Icons.Filled.Close, null, tint = RedDanger, modifier = Modifier.size(20.dp))
+            }
+            Spacer(Modifier.width(14.dp))
+            Text(message, color = RedDanger, fontSize = 13.sp, lineHeight = 18.sp)
+        }
     }
 }
 
 @Composable
-private fun RouteInfoPanel(placeName: String, result: RouteResult) {
+private fun RouteInfoPanel(placeName: String, result: RouteResult, destLatLng: LatLng?) {
     var showSteps by remember { mutableStateOf(false) }
+    val context = LocalContext.current
 
-    Card(
-        modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(topStart = 20.dp, topEnd = 20.dp),
-        elevation = CardDefaults.cardElevation(defaultElevation = 12.dp)
-    ) {
-        Column(modifier = Modifier.padding(20.dp)) {
-            Text(placeName, fontWeight = FontWeight.Bold, fontSize = 17.sp, maxLines = 1)
-            Spacer(Modifier.height(12.dp))
-            Row(horizontalArrangement = Arrangement.spacedBy(28.dp)) {
-                RouteStatItem(Icons.Filled.Route, result.distanceText, "Distancia")
-                RouteStatItem(Icons.Filled.Schedule, result.durationText, "Tiempo est.")
+    RouteSheet {
+        Column(modifier = Modifier.padding(horizontal = 20.dp, vertical = 14.dp)) {
+
+            // Encabezado: destino
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Box(
+                    modifier = Modifier
+                        .size(40.dp)
+                        .clip(CircleShape)
+                        .background(RedDanger.copy(alpha = 0.12f)),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Icon(Icons.Filled.Place, null, tint = RedDanger, modifier = Modifier.size(22.dp))
+                }
+                Spacer(Modifier.width(12.dp))
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(
+                        "CÓMO LLEGAR",
+                        fontSize = 10.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        letterSpacing = 1.sp
+                    )
+                    Text(
+                        placeName,
+                        fontWeight = FontWeight.Bold,
+                        fontSize = 18.sp,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
+                    )
+                }
             }
-            if (result.steps.isNotEmpty()) {
-                Spacer(Modifier.height(10.dp))
-                if (!showSteps) {
-                    TextButton(
-                        onClick = { showSteps = true },
-                        contentPadding = PaddingValues(0.dp),
-                        colors = ButtonDefaults.textButtonColors(contentColor = BlueVibrant)
-                    ) {
-                        Icon(Icons.Filled.ExpandMore, null, modifier = Modifier.size(18.dp))
-                        Spacer(Modifier.width(4.dp))
-                        Text("Indicaciones", fontSize = 13.sp)
-                    }
-                } else {
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Icon(
-                            Icons.Filled.ExpandLess, null,
-                            tint = BlueVibrant,
-                            modifier = Modifier.size(18.dp)
-                        )
-                        Spacer(Modifier.width(4.dp))
-                        Text(
-                            "Indicaciones",
-                            fontSize = 13.sp,
-                            fontWeight = FontWeight.SemiBold,
-                            color = BlueVibrant,
-                            modifier = Modifier.weight(1f)
-                        )
-                        IconButton(
-                            onClick = { showSteps = false },
-                            modifier = Modifier.size(28.dp)
-                        ) {
-                            Icon(
-                                Icons.Filled.Close,
-                                contentDescription = "Cerrar indicaciones",
-                                tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                                modifier = Modifier.size(18.dp)
-                            )
+
+            Spacer(Modifier.height(16.dp))
+
+            // Tarjetas de distancia y tiempo
+            Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                RouteStatTile(
+                    modifier = Modifier.weight(1f),
+                    icon = Icons.Filled.Route,
+                    accent = OrangeAlert,
+                    value = result.distanceText,
+                    label = "Distancia"
+                )
+                RouteStatTile(
+                    modifier = Modifier.weight(1f),
+                    icon = Icons.Filled.Schedule,
+                    accent = BlueVibrant,
+                    value = result.durationText,
+                    label = "Tiempo est."
+                )
+            }
+
+            Spacer(Modifier.height(14.dp))
+
+            // CTA — abrir navegación en Google Maps
+            Button(
+                onClick = {
+                    destLatLng?.let { d ->
+                        try {
+                            val intent = Intent(
+                                Intent.ACTION_VIEW,
+                                Uri.parse("google.navigation:q=${d.latitude},${d.longitude}&mode=w")
+                            ).setPackage("com.google.android.apps.maps")
+                            context.startActivity(intent)
+                        } catch (_: Exception) {
+                            try {
+                                context.startActivity(
+                                    Intent(Intent.ACTION_VIEW, Uri.parse("geo:${d.latitude},${d.longitude}"))
+                                )
+                            } catch (_: Exception) { /* sin app de mapas */ }
                         }
                     }
-                    Spacer(Modifier.height(8.dp))
-                    LazyColumn(modifier = Modifier.heightIn(max = 200.dp)) {
+                },
+                enabled = destLatLng != null,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .heightIn(min = 50.dp),
+                shape = RoundedCornerShape(24.dp),
+                colors = ButtonDefaults.buttonColors(containerColor = GreenSafe)
+            ) {
+                Icon(Icons.AutoMirrored.Filled.DirectionsWalk, null, modifier = Modifier.size(20.dp))
+                Spacer(Modifier.width(8.dp))
+                Text("Iniciar navegación", fontWeight = FontWeight.Bold, fontSize = 15.sp)
+            }
+
+            if (result.steps.isNotEmpty()) {
+                Spacer(Modifier.height(10.dp))
+                HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
+
+                // Cabecera desplegable de indicaciones
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clip(RoundedCornerShape(12.dp))
+                        .clickable { showSteps = !showSteps }
+                        .padding(vertical = 12.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Icon(
+                        Icons.Filled.Navigation,
+                        null,
+                        tint = BlueVibrant,
+                        modifier = Modifier.size(18.dp)
+                    )
+                    Spacer(Modifier.width(8.dp))
+                    Text(
+                        "Indicaciones paso a paso",
+                        fontSize = 14.sp,
+                        fontWeight = FontWeight.SemiBold,
+                        color = MaterialTheme.colorScheme.onSurface,
+                        modifier = Modifier.weight(1f)
+                    )
+                    Text(
+                        "${result.steps.size}",
+                        fontSize = 12.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = BlueVibrant,
+                        modifier = Modifier
+                            .clip(CircleShape)
+                            .background(BlueVibrant.copy(alpha = 0.12f))
+                            .padding(horizontal = 8.dp, vertical = 2.dp)
+                    )
+                    Spacer(Modifier.width(6.dp))
+                    Icon(
+                        if (showSteps) Icons.Filled.ExpandLess else Icons.Filled.ExpandMore,
+                        null,
+                        tint = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+
+                AnimatedVisibility(
+                    visible = showSteps,
+                    enter = expandVertically() + fadeIn(),
+                    exit = shrinkVertically() + fadeOut()
+                ) {
+                    LazyColumn(modifier = Modifier.heightIn(max = 240.dp)) {
                         itemsIndexed(result.steps) { idx, step ->
-                            StepRow(num = idx + 1, step = step)
+                            StepRow(num = idx + 1, step = step, isLast = idx == result.steps.lastIndex)
                         }
                     }
                 }
             }
+
+            Spacer(Modifier.height(6.dp))
         }
     }
 }
 
 @Composable
-private fun RouteStatItem(icon: ImageVector, value: String, label: String) {
+private fun RouteStatTile(
+    modifier: Modifier = Modifier,
+    icon: ImageVector,
+    accent: Color,
+    value: String,
+    label: String
+) {
     Row(
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(8.dp)
-    ) {
-        Icon(icon, null, tint = GreenSafe, modifier = Modifier.size(22.dp))
-        Column {
-            Text(value, fontWeight = FontWeight.SemiBold, fontSize = 16.sp)
-            Text(label, fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
-        }
-    }
-}
-
-@Composable
-private fun StepRow(num: Int, step: RouteStep) {
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(vertical = 6.dp),
-        horizontalArrangement = Arrangement.spacedBy(10.dp)
+        modifier = modifier
+            .clip(RoundedCornerShape(16.dp))
+            .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.6f))
+            .padding(horizontal = 12.dp, vertical = 12.dp),
+        verticalAlignment = Alignment.CenterVertically
     ) {
         Box(
             modifier = Modifier
-                .size(24.dp)
-                .clip(RoundedCornerShape(50))
-                .background(GreenSafe.copy(alpha = 0.15f)),
+                .size(34.dp)
+                .clip(CircleShape)
+                .background(accent.copy(alpha = 0.15f)),
             contentAlignment = Alignment.Center
         ) {
-            Text("$num", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = GreenSafe)
+            Icon(icon, null, tint = accent, modifier = Modifier.size(18.dp))
+        }
+        Spacer(Modifier.width(10.dp))
+        Column {
+            Text(value, fontWeight = FontWeight.Bold, fontSize = 16.sp, maxLines = 1)
+            Text(label, fontSize = 10.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+        }
+    }
+}
+
+@Composable
+private fun StepRow(num: Int, step: RouteStep, isLast: Boolean) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(vertical = 8.dp),
+        horizontalArrangement = Arrangement.spacedBy(12.dp)
+    ) {
+        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+            Box(
+                modifier = Modifier
+                    .size(26.dp)
+                    .clip(CircleShape)
+                    .background(BlueVibrant),
+                contentAlignment = Alignment.Center
+            ) {
+                Text("$num", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = Color.White)
+            }
+            if (!isLast) {
+                Box(
+                    modifier = Modifier
+                        .padding(top = 2.dp)
+                        .width(2.dp)
+                        .height(22.dp)
+                        .background(BlueVibrant.copy(alpha = 0.25f))
+                )
+            }
         }
         Column(modifier = Modifier.weight(1f)) {
-            Text(step.instruction, fontSize = 13.sp, lineHeight = 18.sp)
-            Text(step.distanceText, fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            Text(
+                step.instruction,
+                fontSize = 14.sp,
+                lineHeight = 19.sp,
+                fontWeight = FontWeight.Medium
+            )
+            Spacer(Modifier.height(2.dp))
+            Text(
+                step.distanceText,
+                fontSize = 11.sp,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                fontWeight = FontWeight.SemiBold
+            )
         }
     }
 }

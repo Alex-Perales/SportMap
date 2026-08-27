@@ -31,19 +31,21 @@ def _save_upload_locally(request: Request, subfolder: str, content: bytes, filen
     dest_dir.mkdir(parents=True, exist_ok=True)
     new_name = f"{uuid.uuid4().hex}{ext}"
     (dest_dir / new_name).write_bytes(content)
-    # URL absoluta (no relativa): la app móvil y el navegador del admin la
-    # necesitan completa (con esquema + host) para poder cargarla. Antes se
-    # guardaba como "/uploads/..." y eso además rompía la validación
-    # type="url" del formulario al reabrir el producto para editarlo.
+    rel_path = f"/uploads/{subfolder}/{new_name}"
+
+    # Por defecto se guarda una ruta RELATIVA ("/uploads/..."). Así el host no
+    # queda "quemado" en la base de datos: el navegador del admin la resuelve
+    # contra su propio origen y la app móvil la resuelve contra la URL de su
+    # backend (10.0.2.2 en el emulador / dominio en release). Antes se guardaba
+    # "http://localhost:8000/uploads/..." y esa URL no resuelve desde el
+    # teléfono, así que la imagen salía en negro.
     #
-    # `request.base_url` es el host desde el que el admin abrió el panel
-    # (p.ej. http://localhost:8000). Si la app móvil apunta a otro host
-    # (Railway, IP de la LAN, 10.0.2.2 en el emulador), esa URL no resuelve
-    # desde el teléfono y la imagen sale en blanco/negro. `PUBLIC_BASE_URL`
-    # permite fijar el host público real que sí alcanzan tanto el navegador
-    # como la app. Lo ideal sigue siendo configurar Supabase Storage.
-    base = (os.getenv("PUBLIC_BASE_URL") or str(request.base_url)).rstrip("/")
-    return f"{base}/uploads/{subfolder}/{new_name}"
+    # Si se define PUBLIC_BASE_URL (p.ej. en producción sin Supabase) se guarda
+    # la URL absoluta con ese host. Lo ideal sigue siendo configurar Supabase.
+    public_base = os.getenv("PUBLIC_BASE_URL")
+    if public_base:
+        return f"{public_base.rstrip('/')}{rel_path}"
+    return rel_path
 
 
 async def _handle_image_upload(
