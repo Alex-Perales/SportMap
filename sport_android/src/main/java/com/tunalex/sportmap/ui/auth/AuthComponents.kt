@@ -1,6 +1,7 @@
 package com.tunalex.sportmap.ui.auth
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -55,20 +56,22 @@ import org.json.JSONArray
 import java.net.HttpURLConnection
 import java.net.URL
 
-// ── Paleta (mismos tonos que el diseño de referencia) ───────────────────────
-val TealDark = Color(0xFF0E4C59)
-val TealMid = Color(0xFF16788C)
-val CyanBright = Color(0xFF12C6D6)
-val AuthBgTop = Color(0xFFBFE6E9)
-val AuthBgBottom = Color(0xFF8FD1D8)
+// ── Paleta (azul + cian #00D4FF) ──────────────────────────────────────────
+val AuthBgBlue = Color(0xFF2E5FE8)         // fondo
+val AccentCyan = Color(0xFF00D4FF)         // cian pedido
+val AccentBlue = Color(0xFF1E4FD9)         // azul de apoyo (2º color del degradado)
+val TealDark = Color(0xFF1D4ED8)           // acento legible (checkbox, enlaces, cursor)
+val TealMid = AccentCyan                   // (compat)
+val CyanBright = AccentCyan                // (compat)
 val CardSurface = Color(0xFFECEDEE)
 val FieldSurface = Color(0xFFE1E3E4)
 val InkDark = Color(0xFF1E2A2E)
 val InkMuted = Color(0xFF5B6B70)
 
-val AuthBackgroundBrush = Brush.verticalGradient(listOf(AuthBgTop, AuthBgBottom))
-val TealPanelBrush = Brush.verticalGradient(listOf(TealDark, TealMid))
-val PrimaryButtonBrush = Brush.horizontalGradient(listOf(TealDark, CyanBright))
+val AuthBackgroundBrush = Brush.verticalGradient(listOf(AuthBgBlue, AuthBgBlue))
+// Degradado de dos colores: azul → cian.
+val TealPanelBrush = Brush.verticalGradient(listOf(AccentBlue, AccentCyan))
+val PrimaryButtonBrush = Brush.horizontalGradient(listOf(AccentBlue, AccentCyan))
 
 // ── Campo de texto gris redondeado con icono a la derecha ───────────────────
 @Composable
@@ -160,11 +163,7 @@ fun GradientButton(
             .height(52.dp)
             .clip(RoundedCornerShape(28.dp))
             .background(if (enabled) PrimaryButtonBrush else Brush.horizontalGradient(listOf(InkMuted, InkMuted)))
-            .then(
-                if (enabled && !loading)
-                    Modifier.pointerInput(Unit) { detectTapGestures(onTap = { onClick() }) }
-                else Modifier
-            ),
+            .clickable(enabled = enabled && !loading, onClick = onClick),
         contentAlignment = Alignment.Center
     ) {
         if (loading) {
@@ -181,8 +180,8 @@ fun OutlineChipButton(text: String, onClick: () -> Unit, modifier: Modifier = Mo
     Box(
         modifier = modifier
             .clip(RoundedCornerShape(24.dp))
-            .background(Color.White.copy(alpha = 0.10f))
-            .pointerInput(Unit) { detectTapGestures(onTap = { onClick() }) }
+            .background(Color.White.copy(alpha = 0.14f))
+            .clickable(onClick = onClick)
             .padding(horizontal = 34.dp, vertical = 12.dp),
         contentAlignment = Alignment.Center
     ) {
