@@ -1,0 +1,40 @@
+# Blueprint de despliegue en Render (https://render.com)
+#
+# Uso:
+#   1. Render Dashboard -> New -> Blueprint -> elige este repo.
+#   2. Render lee este archivo y crea el Web Service.
+#   3. Las variables marcadas "sync: false" NO se versionan: se pegan a mano
+#      en el panel de Render (Environment). Los valores reales viven solo en
+#      sport_backend/.env (ignorado por git), nunca aqui.
+#
+# Salud: GET /health   ·   Panel admin: /admin/login   ·   Landing: /
+
+services:
+  - type: web
+    name: sportmap
+    runtime: docker
+    plan: free
+    region: virginia          # mismo lado que Supabase us-east-1
+    rootDir: sport_backend
+    dockerfilePath: ./Dockerfile
+    dockerContext: .
+    healthCheckPath: /health
+    autoDeploy: true
+    envVars:
+      # Conexion a Postgres de Supabase. Usar la cadena del "Session pooler"
+      # (host *.pooler.supabase.com), NO la "Direct connection".
+      - key: DATABASE_URL
+        sync: false
+      # URL del proyecto Supabase (https://<ref>.supabase.co)
+      - key: SUPABASE_URL
+        sync: false
+      # Secret key de Supabase (sb_secret_...). NUNCA la publishable/anon.
+      - key: SUPABASE_SERVICE_KEY
+        sync: false
+      # Host publico de este servicio, p.ej. https://sportmap.onrender.com
+      # (se rellena despues del primer deploy, sin "/" al final).
+      - key: PUBLIC_BASE_URL
+        sync: false
+      # Firma de sesiones del panel admin: Render genera un valor aleatorio.
+      - key: SECRET_KEY
+        generateValue: true
