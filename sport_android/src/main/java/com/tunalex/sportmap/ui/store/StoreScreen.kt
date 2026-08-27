@@ -177,6 +177,10 @@ private fun ProductCard(product: ProductEntity, onClick: () -> Unit) {
                     modifier = Modifier
                         .fillMaxWidth()
                         .height(140.dp)
+                        // Fondo neutro para que una imagen que aún carga o que
+                        // no se pudo descargar se vea como un placeholder gris
+                        // y no como un rectángulo negro.
+                        .background(MaterialTheme.colorScheme.surfaceVariant)
                 )
                 if (product.isOnSale) {
                     Box(

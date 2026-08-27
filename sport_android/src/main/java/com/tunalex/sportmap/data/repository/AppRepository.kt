@@ -214,6 +214,7 @@ class AppRepository(
     suspend fun syncProductsFromBackend() {
         try {
             val remote = api.getProducts()
+            if (remote.isEmpty()) return
             val entities = remote.map { dto ->
                 ProductEntity(
                     id = dto.id,
@@ -228,7 +229,7 @@ class AppRepository(
                     discountPercent = dto.discountPercent
                 )
             }
-            productDao.insertAll(entities)
+            productDao.replaceAll(entities)
         } catch (_: Exception) {}
     }
 

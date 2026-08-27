@@ -1,4 +1,5 @@
 import hashlib
+import os
 import time
 import uuid
 from pathlib import Path
@@ -34,7 +35,14 @@ def _save_upload_locally(request: Request, subfolder: str, content: bytes, filen
     # necesitan completa (con esquema + host) para poder cargarla. Antes se
     # guardaba como "/uploads/..." y eso además rompía la validación
     # type="url" del formulario al reabrir el producto para editarlo.
-    base = str(request.base_url).rstrip("/")
+    #
+    # `request.base_url` es el host desde el que el admin abrió el panel
+    # (p.ej. http://localhost:8000). Si la app móvil apunta a otro host
+    # (Railway, IP de la LAN, 10.0.2.2 en el emulador), esa URL no resuelve
+    # desde el teléfono y la imagen sale en blanco/negro. `PUBLIC_BASE_URL`
+    # permite fijar el host público real que sí alcanzan tanto el navegador
+    # como la app. Lo ideal sigue siendo configurar Supabase Storage.
+    base = (os.getenv("PUBLIC_BASE_URL") or str(request.base_url)).rstrip("/")
     return f"{base}/uploads/{subfolder}/{new_name}"
 
 
