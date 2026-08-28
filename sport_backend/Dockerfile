@@ -10,4 +10,6 @@ COPY pw_sportmap_src/dist/ ./pw_sportmap_src/dist/
 
 EXPOSE 8000
 
-CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]
+# Respeta $PORT si el host (Render, Koyeb, etc.) lo inyecta; si no, usa 8000
+# (Docker Compose local no lo define y sigue funcionando igual).
+CMD ["sh", "-c", "uvicorn app.main:app --host 0.0.0.0 --port ${PORT:-8000}"]
