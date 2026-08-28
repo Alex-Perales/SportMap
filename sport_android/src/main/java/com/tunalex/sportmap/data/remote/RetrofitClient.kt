@@ -15,7 +15,7 @@ object RetrofitClient {
     val BASE_URL = if (BuildConfig.DEBUG)
         "http://10.0.2.2:8000/"
     else
-        "https://sportmap-production.up.railway.app/"
+        "https://sportmap-arc6.onrender.com/"
 
     private val okHttp: OkHttpClient by lazy {
         val logging = HttpLoggingInterceptor().apply {
