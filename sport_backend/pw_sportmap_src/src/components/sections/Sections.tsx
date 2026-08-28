@@ -438,32 +438,12 @@ export const QuickDownload: React.FC<QuickDownloadProps> = ({ onOpenDownloadModa
               <h3 className="font-extrabold text-xl text-slate-900">Apunta tu cámara aquí</h3>
 
               <div className="p-4 bg-slate-50 border border-slate-200 rounded-2xl inline-block shadow-inner">
-                <svg className="w-44 h-44 text-slate-900" viewBox="0 0 100 100" fill="currentColor">
-                  <rect x="0" y="0" width="100" height="100" fill="white" />
-                  <rect x="10" y="10" width="25" height="25" fill="#059669" />
-                  <rect x="15" y="15" width="15" height="15" fill="white" />
-                  <rect x="18" y="18" width="9" height="9" fill="#059669" />
-
-                  <rect x="65" y="10" width="25" height="25" fill="#059669" />
-                  <rect x="70" y="15" width="15" height="15" fill="white" />
-                  <rect x="73" y="18" width="9" height="9" fill="#059669" />
-
-                  <rect x="10" y="65" width="25" height="25" fill="#059669" />
-                  <rect x="15" y="70" width="15" height="15" fill="white" />
-                  <rect x="18" y="73" width="9" height="9" fill="#059669" />
-
-                  <rect x="42" y="10" width="8" height="8" fill="#1F2937" />
-                  <rect x="52" y="18" width="8" height="8" fill="#1F2937" />
-                  <rect x="42" y="26" width="8" height="8" fill="#1F2937" />
-                  <rect x="10" y="42" width="8" height="8" fill="#1F2937" />
-                  <rect x="26" y="42" width="8" height="8" fill="#1F2937" />
-                  <rect x="42" y="42" width="16" height="16" fill="#047857" />
-                  <rect x="65" y="42" width="8" height="8" fill="#1F2937" />
-                  <rect x="81" y="42" width="8" height="8" fill="#1F2937" />
-                  <rect x="42" y="65" width="8" height="8" fill="#1F2937" />
-                  <rect x="52" y="75" width="12" height="12" fill="#059669" />
-                  <rect x="70" y="65" width="18" height="18" fill="#1F2937" />
-                </svg>
+                {/* QR real generado por el backend, apunta a /download */}
+                <img
+                  src="/download/qr.svg"
+                  alt="Código QR para descargar la app SportMap"
+                  className="w-44 h-44"
+                />
               </div>
 
               <p className="ui-text-lead text-slate-500 font-medium">

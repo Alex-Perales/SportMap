@@ -71,35 +71,12 @@ export const DownloadModal: React.FC<DownloadModalProps> = ({ isOpen, onClose })
           {/* QR Code Section */}
           <div className="flex flex-col sm:flex-row items-center text-center sm:text-left gap-4 p-4 bg-slate-50 rounded-xl border border-slate-200 mb-6">
             <div className="bg-white p-2 rounded-lg border border-slate-200 shadow-sm shrink-0">
-              {/* Simulated QR Code SVG */}
-              <svg className="w-20 h-20 text-slate-900" viewBox="0 0 100 100" fill="currentColor">
-                <rect x="0" y="0" width="100" height="100" fill="white" />
-                {/* Outer corners */}
-                <rect x="10" y="10" width="25" height="25" fill="#059669" />
-                <rect x="15" y="15" width="15" height="15" fill="white" />
-                <rect x="18" y="18" width="9" height="9" fill="#059669" />
-
-                <rect x="65" y="10" width="25" height="25" fill="#059669" />
-                <rect x="70" y="15" width="15" height="15" fill="white" />
-                <rect x="73" y="18" width="9" height="9" fill="#059669" />
-
-                <rect x="10" y="65" width="25" height="25" fill="#059669" />
-                <rect x="15" y="70" width="15" height="15" fill="white" />
-                <rect x="18" y="73" width="9" height="9" fill="#059669" />
-
-                {/* Data dots */}
-                <rect x="42" y="10" width="6" height="6" fill="#1F2937" />
-                <rect x="52" y="18" width="6" height="6" fill="#1F2937" />
-                <rect x="42" y="26" width="6" height="6" fill="#1F2937" />
-                <rect x="10" y="42" width="6" height="6" fill="#1F2937" />
-                <rect x="26" y="42" width="6" height="6" fill="#1F2937" />
-                <rect x="42" y="42" width="16" height="16" fill="#047857" />
-                <rect x="65" y="42" width="6" height="6" fill="#1F2937" />
-                <rect x="81" y="42" width="6" height="6" fill="#1F2937" />
-                <rect x="42" y="65" width="6" height="6" fill="#1F2937" />
-                <rect x="52" y="75" width="10" height="10" fill="#059669" />
-                <rect x="70" y="65" width="15" height="15" fill="#1F2937" />
-              </svg>
+              {/* QR real generado por el backend, apunta a /download */}
+              <img
+                src="/download/qr.svg"
+                alt="Código QR para descargar la app SportMap"
+                className="w-20 h-20"
+              />
             </div>
             <div>
               <div className="flex items-center gap-1.5 text-sm font-bold text-emerald-600 uppercase tracking-wide">

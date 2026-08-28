@@ -1,10 +1,12 @@
+import io
 import os
 from pathlib import Path
 
-from fastapi import FastAPI, HTTPException
+import segno
+from fastapi import FastAPI, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
-from fastapi.responses import FileResponse
+from fastapi.responses import FileResponse, Response
 from starlette.middleware.sessions import SessionMiddleware
 from contextlib import asynccontextmanager
 
@@ -92,6 +94,21 @@ async def download_apk():
         str(_apk_path),
         media_type="application/vnd.android.package-archive",
         filename="SportMap.apk",
+    )
+
+
+@app.get("/download/qr.svg")
+async def download_qr(request: Request):
+    """QR real que apunta a la descarga del APK. Usa PUBLIC_BASE_URL si está
+    definida; si no, deduce el host de la petición."""
+    base = os.getenv("PUBLIC_BASE_URL", "").rstrip("/") or str(request.base_url).rstrip("/")
+    qr = segno.make(f"{base}/download", error="m")
+    buf = io.BytesIO()
+    qr.save(buf, kind="svg", scale=6, border=4, dark="#0f172a", light="#ffffff")
+    return Response(
+        content=buf.getvalue(),
+        media_type="image/svg+xml",
+        headers={"Cache-Control": "public, max-age=3600"},
     )
 
 
