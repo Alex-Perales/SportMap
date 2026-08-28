@@ -7,6 +7,7 @@ RUN pip install --no-cache-dir -r requirements.txt
 
 COPY app/ ./app/
 COPY pw_sportmap_src/dist/ ./pw_sportmap_src/dist/
+COPY downloads/ ./downloads/
 
 EXPOSE 8000
 

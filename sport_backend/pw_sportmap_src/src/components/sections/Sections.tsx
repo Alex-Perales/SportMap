@@ -388,13 +388,8 @@ interface QuickDownloadProps {
 
 export const QuickDownload: React.FC<QuickDownloadProps> = ({ onOpenDownloadModal }) => {
   const handleDownloadApk = () => {
-    const element = document.createElement('a');
-    const file = new Blob(['SportMap App Android APK Versión de Prueba'], { type: 'text/plain' });
-    element.href = URL.createObjectURL(file);
-    element.download = 'SportMap_v1.0.apk';
-    document.body.appendChild(element);
-    element.click();
-    document.body.removeChild(element);
+    // El backend sirve el APK real en /download (ver sport_backend/app/main.py).
+    window.location.href = '/download';
   };
 
   return (

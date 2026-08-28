@@ -1,7 +1,7 @@
 import os
 from pathlib import Path
 
-from fastapi import FastAPI
+from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse
@@ -73,6 +73,26 @@ app.mount("/assets", StaticFiles(directory=str(_web_dist_dir / "assets")), name=
 @app.get("/")
 async def home():
     return FileResponse(str(_web_dist_dir / "index.html"))
+
+
+# APK de la app Android para descarga directa desde la landing page.
+# Se coloca a mano en sport_backend/downloads/sportmap.apk (ver README ahí) y
+# el Dockerfile copia esa carpeta a la imagen.
+_apk_path = Path(__file__).resolve().parent.parent / "downloads" / "sportmap.apk"
+
+
+@app.get("/download")
+async def download_apk():
+    if not _apk_path.is_file():
+        raise HTTPException(
+            status_code=404,
+            detail="El APK todavía no está disponible. Vuelve a intentarlo más tarde.",
+        )
+    return FileResponse(
+        str(_apk_path),
+        media_type="application/vnd.android.package-archive",
+        filename="SportMap.apk",
+    )
 
 
 @app.get("/health")
